@@ -54,6 +54,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .badge-green{background:var(--green-light);color:var(--green);}
 .badge-red{background:var(--red-light);color:var(--red);}
 .badge-blue{background:#E6F1FB;color:#0C447C;}
+.badge-orange{background:#FFF3CD;color:#856404;}
 .divider{height:1px;background:var(--gray-mid);margin:1rem 0;}
 .radio-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
 .radio-card{border:2px solid var(--gray-mid);padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:var(--bg);}
@@ -214,18 +215,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="disclaimer-title">⚠ Übungsmeldung</div>
       <div class="disclaimer-sub">Kein Einsatz – Kein Sondersignal!</div>
     </div>
+    <div style="background:var(--bg2);border-left:3px solid var(--gray-mid);padding:0.6rem 0.9rem;margin-bottom:0.5rem;font-size:12px;color:var(--text2);line-height:1.5;">
+      Ziel zu Übungszwecken zufällig gewählt. Anfahrt gut prüfen und Strassenverkehrsregeln einhalten.
+    </div>
     <div class="alarm-header">
       <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
       <span>Einsatzmeldung</span>
     </div>
-    <div style="background:var(--bg2);border-left:3px solid var(--gray-mid);padding:0.6rem 0.9rem;margin-bottom:0.75rem;font-size:12px;color:var(--text2);line-height:1.5;">
-      Ziel zu Übungszwecken zufällig gewählt. Anfahrt gut prüfen und Strassenverkehrsregeln einhalten.
-    </div>
     <div class="card" style="border-top-color:var(--black)">
       <div class="top-row">
         <div style="min-width:0">
-          <span class="badge badge-blue" id="e-alarmierung" style="margin-right:6px;display:none"></span>
-          <span class="badge badge-red" id="e-stichwort">BRAND</span>
+          <div style="margin-bottom:4px"><span class="badge badge-red" id="e-stichwort">BRAND</span></div>
+          <div style="margin-bottom:6px"><span class="badge badge-blue" id="e-alarmierung" style="display:none"></span></div>
           <div class="alarm-addr" id="e-addr"></div>
           <div class="alarm-sub" id="e-city"></div>
           <a class="maps-link" id="e-mapslink" href="#" target="_blank">
@@ -344,7 +345,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.37</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.38</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -681,8 +682,15 @@ function zeigeFrageUI(){
     ?`<span class="typ-badge typ-badge-taetigkeit">Tätigkeit</span>`
     :`<span class="typ-badge typ-badge-frage">Frage</span>`;
   if(isTaetigkeit){
+    // Zusatzinfos aus Antwort_A–F (a[0]–a[5])
+    const zusatzItems=q.a.filter(x=>x&&x.trim());
+    const zusatzHtml=zusatzItems.length>0
+      ?`<div style="margin-bottom:1.25rem;padding:0.75rem;background:var(--bg2);border-left:3px solid var(--gray-mid);">`
+        +zusatzItems.map(x=>`<div style="font-size:13px;color:var(--text2);line-height:1.8;">${x}</div>`).join("")
+        +`</div>`
+      :"";
     // Schritt 1: nur Tätigkeit anzeigen + Button "Abgeschlossen"
-    document.getElementById("q-antworten").innerHTML=`
+    document.getElementById("q-antworten").innerHTML=zusatzHtml+`
       <div style="margin-bottom:1rem">
         <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="taetigkeitAbgeschlossen()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -777,7 +785,7 @@ function zeigeAbschluss(){
   if(taetList.length>0){
     tr.style.display="block";
     const stufeLabel=["","Ohne weiteres","Nachgeschaut / Hilfe","Nicht gelöst"];
-    const stufeBadge=["","badge-green","","badge-red"];
+    const stufeBadge=["","badge-green","badge-orange","badge-red"];
     document.getElementById("ac-taetigkeit-detail").innerHTML=taetList.map((t,i)=>`
       <div class="sum-row">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
@@ -832,7 +840,7 @@ async function abschliessen(){
                frage:q.frage,gegeben:q.gegeben,korrekt:q.korrekt,richtig:q.richtig?"JA":"NEIN"}))
       })
     });
-    const stufeLabel=["","Ohne weiteres","Nachgeschaut","Nicht gelöst"];
+    const stufeLabel=["","✓ Ohne weiteres","⚠ Nachgeschaut","✗ Nicht gelöst"];
     const taetList=ST.taetigkeitResults||[];
     let summaryHtml=`<strong>${ST.fahrer} / ${ST.beifahrer}</strong> · ${ST.fahrzeug} · ${gl}<br>${ST.datum} · ${ST.abfahrt}–${rk}`;
     if(ST.einsatzCount>0) summaryHtml+=`<br>${ST.einsatzCount}× Einsatz`;
