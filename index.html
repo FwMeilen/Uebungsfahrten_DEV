@@ -344,7 +344,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.36</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.37</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -681,15 +681,41 @@ function zeigeFrageUI(){
     ?`<span class="typ-badge typ-badge-taetigkeit">Tätigkeit</span>`
     :`<span class="typ-badge typ-badge-frage">Frage</span>`;
   if(isTaetigkeit){
+    // Schritt 1: nur Tätigkeit anzeigen + Button "Abgeschlossen"
     document.getElementById("q-antworten").innerHTML=`
-      <button class="stufe-btn" id="stufe-1" onclick="bewerteStudfe(1)">1 &nbsp;·&nbsp; Konnte ich ohne weiteres umsetzen</button>
-      <button class="stufe-btn" id="stufe-2" onclick="bewerteStudfe(2)">2 &nbsp;·&nbsp; Musste ich nachschauen / brauchte Hilfe</button>
-      <button class="stufe-btn" id="stufe-3" onclick="bewerteStudfe(3)">3 &nbsp;·&nbsp; Konnten wir zusammen nicht</button>`;
+      <div style="margin-bottom:1rem">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="taetigkeitAbgeschlossen()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Abgeschlossen
+        </button>
+      </div>
+      <div id="taetigkeit-stufen" style="display:none">
+        <div class="divider" style="margin:0.75rem 0"></div>
+        <div id="taetigkeit-erklaerung-box" style="background:var(--bg2);padding:0.75rem;margin-bottom:0.75rem;font-size:13px;color:var(--text2);line-height:1.6;display:none"></div>
+        <button class="stufe-btn" id="stufe-1" onclick="bewerteStudfe(1)">1 &nbsp;·&nbsp; Konnte ich ohne weiteres umsetzen</button>
+        <button class="stufe-btn" id="stufe-2" onclick="bewerteStudfe(2)">2 &nbsp;·&nbsp; Musste ich nachschauen / brauchte Hilfe</button>
+        <button class="stufe-btn" id="stufe-3" onclick="bewerteStudfe(3)">3 &nbsp;·&nbsp; Konnten wir zusammen nicht</button>
+      </div>`;
   } else {
     const shuffled=q.a.map((t,i)=>({t,i})).sort(()=>Math.random()-0.5);
     document.getElementById("q-antworten").innerHTML=shuffled.map(x=>
       `<button class="antwort-btn" data-idx="${x.i}" onclick="antworten(${x.i})">${x.t}</button>`
     ).join("");
+  }
+}
+
+function taetigkeitAbgeschlossen(){
+  // Schritt 2: Kontrollpunkte + Stufen einblenden, Button deaktivieren
+  const q=QPOOL[QIDX];
+  const stufen=document.getElementById("taetigkeit-stufen");
+  if(stufen) stufen.style.display="block";
+  // Abgeschlossen-Button deaktivieren
+  const abgBtn=document.querySelector("#q-antworten .btn-primary");
+  if(abgBtn){abgBtn.disabled=true;abgBtn.style.opacity="0.5";}
+  // Erklärung/Kontrollpunkte einblenden
+  if(q.e){
+    const erkBox=document.getElementById("taetigkeit-erklaerung-box");
+    if(erkBox){erkBox.textContent=q.e;erkBox.style.display="block";}
   }
 }
 
@@ -699,7 +725,6 @@ function bewerteStudfe(stufe){
   const q=QPOOL[QIDX];
   if(!ST.taetigkeitResults) ST.taetigkeitResults=[];
   ST.taetigkeitResults.push({frage:q.f,stufe:stufe,hilfe:""});
-  if(q.e){const el=document.getElementById("q-erklaerung");el.textContent=q.e;el.style.display="block";}
   if(stufe===3){
     document.getElementById("q-hilfe-box").style.display="block";
   }
