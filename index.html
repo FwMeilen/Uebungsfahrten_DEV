@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fahrtraining – Stützpunktfeuerwehr Meilen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --red:#CC0000;--red-dark:#990000;--red-light:#FDEAEA;
+  --black:#1a1a1a;--gray:#666;--gray-mid:#e0e0e0;
+  --green:#2d6a1f;--green-light:#eaf3e6;
+  --bg:#fff;--bg2:#f4f4f4;--bg3:#e8e8e8;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+}
+body{font-family:'Open Sans',Arial,sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;font-size:14px;}
+.site-header{background:var(--black);}
+.site-header-inner{max-width:660px;margin:0 auto;padding:0 1rem;display:flex;align-items:center;height:54px;gap:12px;}
+.logo-flame{width:32px;height:32px;background:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-flame svg{width:18px;height:18px;fill:white;}
+.logo-text{color:white;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;line-height:1.2;}
+.logo-text span{display:block;font-size:10px;font-weight:400;color:#999;text-transform:none;letter-spacing:0;}
+.red-stripe{height:4px;background:var(--red);}
+.page{max-width:660px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+.screen{display:none;}
+.screen.active{display:block;}
+.card{background:var(--bg);border:1px solid var(--gray-mid);border-top:3px solid var(--red);padding:1.25rem;margin-bottom:1rem;}
+h2{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem;}
+h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.5rem;}
+.sub{font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.5;}
+label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray);display:block;margin-bottom:3px;margin-top:12px;}
+label:first-of-type{margin-top:0;}
+input[type=text],input[type=date],input[type=time],select{
+  width:100%;height:38px;padding:0 10px;border:1px solid var(--gray-mid);
+  background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;
+  appearance:none;-webkit-appearance:none;border-radius:0;
+}
+input[type=text]:focus,input[type=date]:focus,input[type=time]:focus,select:focus{outline:none;border-color:var(--red);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{height:40px;padding:0 20px;border:2px solid var(--black);background:var(--bg);color:var(--black);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:inherit;border-radius:0;}
+.btn:hover{background:var(--black);color:#fff;}
+.btn:active{transform:scale(0.98);}
+.btn-primary{background:var(--red);color:#fff;border-color:var(--red);}
+.btn-primary:hover{background:var(--red-dark);border-color:var(--red-dark);}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red);}
+.btn-red:hover{background:var(--red-dark);border-color:var(--red-dark);}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green);}
+.btn-green:hover{background:#1e4d15;border-color:#1e4d15;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:1.25rem;}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;display:inline-block;text-transform:uppercase;letter-spacing:0.05em;}
+.badge-green{background:var(--green-light);color:var(--green);}
+.badge-red{background:var(--red-light);color:var(--red);}
+.badge-blue{background:#E6F1FB;color:#0C447C;}
+.divider{height:1px;background:var(--gray-mid);margin:1rem 0;}
+.radio-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.radio-card{border:2px solid var(--gray-mid);padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:var(--bg);}
+.radio-card:hover{border-color:var(--gray);}
+.radio-card.selected{border-color:var(--red);background:var(--red-light);color:var(--red-dark);}
+/* Disclaimer */
+.disclaimer{background:var(--red);color:#fff;padding:1rem;margin-bottom:1rem;text-align:center;}
+.disclaimer-title{font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.disclaimer-sub{font-size:13px;margin-top:4px;font-weight:600;opacity:0.9;}
+/* Alarm */
+.alarm-header{background:var(--black);color:#fff;padding:0.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;}
+.alarm-header svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.alarm-header span{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.alarm-addr{font-size:22px;font-weight:700;margin:0.5rem 0 0.2rem;}
+.alarm-sub{font-size:14px;color:var(--text2);margin-bottom:0.75rem;}
+.alarm-meld{background:var(--bg2);border-left:3px solid var(--red);padding:0.9rem;margin:0.75rem 0;}
+.alarm-lbl{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;}
+.alarm-text{font-size:15px;font-weight:600;line-height:1.5;}
+.maps-link{font-size:13px;color:var(--red);display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-weight:700;}
+.maps-link:hover{text-decoration:underline;}
+.qr-wrap{background:white;padding:10px;display:inline-block;border:1px solid var(--gray-mid);}
+.top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+/* Weiter-Wahl nach Einsatz */
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1rem;}
+.choice-card{border:2px solid var(--gray-mid);padding:1rem;cursor:pointer;text-align:center;background:var(--bg);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;}
+.choice-card:hover{border-color:var(--red);background:var(--red-light);color:var(--red-dark);}
+/* Abfrage */
+.progress-bar-bg{height:4px;background:var(--gray-mid);margin-bottom:1.25rem;}
+.progress-bar{height:4px;background:var(--red);transition:width 0.3s;}
+.frage-nr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray);margin-bottom:6px;}
+.frage-text{font-size:16px;font-weight:700;margin-bottom:1rem;line-height:1.5;}
+.antwort-btn{width:100%;text-align:left;padding:10px 14px;margin-bottom:8px;border:1px solid var(--gray-mid);background:var(--bg);color:var(--text);font-size:14px;cursor:pointer;display:block;font-family:inherit;line-height:1.4;border-radius:0;}
+.antwort-btn:hover{background:var(--bg2);}
+.antwort-btn.correct{background:var(--green-light);border-color:var(--green);border-left:4px solid var(--green);color:var(--green);}
+.antwort-btn.wrong{background:var(--red-light);border-color:var(--red);border-left:4px solid var(--red);color:var(--red-dark);}
+.erklaerung{background:var(--bg2);border-left:3px solid var(--gray-mid);padding:0.75rem;margin-top:0.5rem;font-size:13px;color:var(--text2);display:none;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:1rem 0;}
+.stat-card{background:var(--bg2);border-top:3px solid var(--red);padding:0.75rem;}
+.stat-val{font-size:22px;font-weight:700;}
+.stat-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray);margin-top:2px;}
+.sum-row{padding:8px 0;border-bottom:1px solid var(--gray-mid);font-size:13px;}
+.sum-row:last-child{border-bottom:none;}
+.chip{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--gray);background:var(--bg2);padding:3px 10px;border:1px solid var(--gray-mid);display:inline-block;margin-right:4px;margin-bottom:4px;}
+.save-status{font-size:12px;font-weight:600;margin-top:10px;padding:8px 12px;display:none;}
+.save-ok{background:var(--green-light);color:var(--green);border-left:3px solid var(--green);}
+.save-err{background:var(--red-light);color:var(--red-dark);border-left:3px solid var(--red);}
+.err-msg{color:var(--red);font-size:12px;font-weight:600;margin-top:8px;display:none;}
+.init-overlay{position:fixed;inset:0;background:rgba(26,26,26,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:100;}
+.init-overlay svg{animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.init-overlay p{color:white;font-size:14px;font-weight:600;}
+.init-sub{color:#aaa;font-size:12px;}
+.site-footer{background:var(--black);color:#888;font-size:11px;text-align:center;padding:1rem;}
+.load-popup{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:var(--black);color:#fff;padding:0.75rem 1rem;font-size:12px;max-width:340px;width:calc(100% - 2rem);z-index:200;display:none;border-left:4px solid var(--red);}
+.load-popup-title{font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--red);margin-bottom:4px;}
+.load-popup-list{color:#ccc;line-height:1.6;}
+.load-popup-close{position:absolute;top:8px;right:10px;background:none;border:none;color:#888;font-size:16px;cursor:pointer;line-height:1;}
+.load-popup-close:hover{color:#fff;}
+.typ-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 10px;margin-bottom:10px;border-radius:2px;}
+.typ-badge-frage{background:#E6F1FB;color:#0C447C;}
+.typ-badge-taetigkeit{background:#FFF3CD;color:#856404;}
+.stufe-btn{width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:2px solid var(--gray-mid);background:var(--bg);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;display:block;font-family:inherit;line-height:1.4;border-radius:0;}
+.stufe-btn:hover{background:var(--bg2);border-color:var(--gray);}
+.stufe-btn.selected-1{background:var(--green-light);border-color:var(--green);color:var(--green);}
+.stufe-btn.selected-2{background:#FFF3CD;border-color:#856404;color:#856404;}
+.stufe-btn.selected-3{background:var(--red-light);border-color:var(--red);color:var(--red-dark);}
+.hilfe-box{margin-top:0.75rem;display:none;}
+.hilfe-box label{color:var(--red-dark);}
+.hilfe-box textarea{width:100%;min-height:80px;padding:8px 10px;border:1px solid var(--gray-mid);font-size:13px;font-family:inherit;resize:vertical;border-radius:0;}
+.hilfe-box textarea:focus{outline:none;border-color:var(--red);}</style>
+</head>
+<body>
+
+<div class="init-overlay" id="init-overlay">
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#CC0000" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 11-6.22-8.56"/></svg>
+  <p id="init-msg">Wird geladen…</p>
+  <div class="init-sub" id="init-sub"></div>
+</div>
+
+<div class="site-header">
+  <div class="site-header-inner">
+    <img src="https://www.feuerwehr-meilen.ch/fileadmin/Public/Website/Templates/Images/Logo-FeuerwehrMeilen.png" alt="Stützpunktfeuerwehr Meilen" style="height:38px;width:auto;object-fit:contain;">
+    <div class="logo-text">Stützpunktfeuerwehr Meilen<span>Fahrtraining</span></div>
+  </div>
+</div>
+<div class="red-stripe"></div>
+
+<div class="page">
+
+  <!-- FORM 1 -->
+  <div class="screen active" id="s-form1">
+    <div class="card">
+      <h2>Fahrt erfassen</h2>
+      <p class="sub">Angaben vor der Abfahrt ausfüllen</p>
+      <div class="grid2">
+        <div><label>Fahrer (Kürzel)</label><input type="text" id="f-fahrer" maxlength="3" style="text-transform:uppercase"></div>
+        <div><label>Beifahrer (Kürzel)</label><input type="text" id="f-beifahrer" maxlength="3" style="text-transform:uppercase"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Datum</label><input type="date" id="f-datum"></div>
+        <div><label>Abfahrtszeit</label><input type="time" id="f-abfahrt"></div>
+      </div>
+      <label>Fahrzeugkategorie</label>
+      <div class="radio-group" id="kat-group">
+        <div class="radio-card" id="rc-kat-b" onclick="selectKat('B')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2h-2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+          B Fahrzeuge
+        </div>
+        <div class="radio-card" id="rc-kat-c" onclick="selectKat('C')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          C Fahrzeuge
+        </div>
+      </div>
+      <div id="fahrzeug-wrap" style="display:none">
+        <label>Fahrzeug</label>
+        <select id="f-fahrzeug">
+          <option value="">– wählen –</option>
+        </select>
+      </div>
+      <div id="gebiet-wrap" style="display:none">
+        <label>Gebiet Ortsfeuerwehr</label>
+        <div class="radio-group">
+          <div class="radio-card" id="rc-orts" onclick="selectGebiet('orts')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Ortsfeuerwehrgebiet
+          </div>
+          <div class="radio-card" id="rc-stuetzpunkt" onclick="selectGebiet('stuetzpunkt')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Stützpunktgebiet
+          </div>
+        </div>
+      </div>
+      <label>Fahrt</label>
+      <select id="f-fahrt">
+        <option value="">– wählen –</option>
+        <option value="frei">Freies Fahren</option>
+        <option value="einsatz" selected>Einsatzmeldung</option>
+      </select>
+      <label>Aufbau</label>
+      <select id="f-aufbau">
+        <option value="">– wählen –</option>
+        <option value="ueben">Freies Üben</option>
+        <option value="abfrage" selected>Abfrage</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="weiter()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          Weiter
+        </button>
+      </div>
+      <p class="err-msg" id="form1-err">Bitte alle Felder ausfüllen.</p>
+    </div>
+  </div>
+
+  <!-- EINSATZMELDUNG -->
+  <div class="screen" id="s-einsatz">
+    <div class="disclaimer">
+      <div class="disclaimer-title">⚠ Übungsmeldung</div>
+      <div class="disclaimer-sub">Kein Einsatz – Kein Sondersignal!</div>
+    </div>
+    <div class="alarm-header">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span>Einsatzmeldung</span>
+    </div>
+    <div style="background:var(--bg2);border-left:3px solid var(--gray-mid);padding:0.6rem 0.9rem;margin-bottom:0.75rem;font-size:12px;color:var(--text2);line-height:1.5;">
+      Ziel zu Übungszwecken zufällig gewählt. Anfahrt gut prüfen und Strassenverkehrsregeln einhalten.
+    </div>
+    <div class="card" style="border-top-color:var(--black)">
+      <div class="top-row">
+        <div style="min-width:0">
+          <span class="badge badge-blue" id="e-alarmierung" style="margin-right:6px;display:none"></span>
+          <span class="badge badge-red" id="e-stichwort">BRAND</span>
+          <div class="alarm-addr" id="e-addr"></div>
+          <div class="alarm-sub" id="e-city"></div>
+          <a class="maps-link" id="e-mapslink" href="#" target="_blank">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Google Maps öffnen
+          </a>
+        </div>
+        <div class="qr-wrap"><canvas id="e-qr" width="100" height="100"></canvas></div>
+      </div>
+      <div class="alarm-meld"><div class="alarm-lbl">Meldung</div><div class="alarm-text" id="e-meldung"></div></div>
+      <div class="alarm-meld"><div class="alarm-lbl">Einsatzmittel</div><div class="alarm-text" id="e-mittel"></div></div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="einsatzOrtErreicht()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Bei Einsatzort angekommen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUTE FAHRT (Freies Fahren) -->
+  <div class="screen" id="s-gute-fahrt">
+    <div class="card" style="text-align:center;padding:2rem 1.25rem">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      <h2>Gute Fahrt!</h2>
+      <p class="sub" style="margin-top:0.5rem" id="gf-info"></p>
+      <div class="btn-row" style="justify-content:center;margin-top:1.5rem" id="gf-btn-row"></div>
+    </div>
+  </div>
+
+  <!-- NACH EINSATZ: WAHL -->
+  <div class="screen" id="s-nach-einsatz">
+    <div class="card">
+      <h2>Einsatz abgeschlossen</h2>
+      <p class="sub">Wie weiter?</p>
+      <div class="choice-grid">
+        <div class="choice-card" onclick="nochEinEinsatz()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          Noch ein Einsatz
+        </div>
+        <div class="choice-card" onclick="weiterNachEinsatz()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><polyline points="9 18 15 12 9 6"/></svg>
+          Weiter zu Aufbautraining
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABFRAGE -->
+  <div class="screen" id="s-abfrage">
+    <div class="card">
+      <div class="progress-bar-bg"><div class="progress-bar" id="q-progress" style="width:0%"></div></div>
+      <div class="frage-nr" id="q-nr">Frage 1 von 9</div>
+      <div id="q-typ-badge"></div>
+      <div class="frage-text" id="q-text"></div>
+      <div id="q-antworten"></div>
+      <div class="erklaerung" id="q-erklaerung"></div>
+      <div class="hilfe-box" id="q-hilfe-box">
+        <label>Wo braucht Ihr Hilfe / Unterstützung / Nachausbildung</label>
+        <textarea id="q-hilfe-text" placeholder="Beschreibung…"></textarea>
+      </div>
+      <div class="btn-row" id="q-next-row" style="display:none">
+        <button class="btn btn-primary" onclick="naechsteFrage()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          Nächste
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABSCHLUSS -->
+  <div class="screen" id="s-abschluss">
+    <div class="card">
+      <span class="badge badge-green">Fahrt abgeschlossen</span>
+      <h2 style="margin-top:0.5rem">Abschluss</h2>
+      <div style="margin:0.75rem 0" id="ac-chips"></div>
+      <div class="divider"></div>
+      <div style="background:var(--bg2);border:2px solid var(--black);padding:1rem;margin-bottom:0.5rem;">
+        <label style="margin-top:0;font-size:12px;color:var(--black);">Zeit Rückkehr</label>
+        <input type="time" id="ac-rueckkehr" style="font-size:20px;font-weight:700;height:48px;border:none;background:transparent;padding:0;">
+      </div>
+      <div id="ac-taetigkeit-result" style="display:none">
+        <div class="divider"></div>
+        <h3>Tätigkeiten</h3>
+        <div id="ac-taetigkeit-detail"></div>
+      </div>
+      <div id="ac-quiz-result" style="display:none">
+        <div class="divider"></div>
+        <h3>Quiz-Auswertung</h3>
+        <div class="stat-grid" id="ac-stats"></div>
+        <div id="ac-detail"></div>
+      </div>
+      <div class="btn-row" style="margin-top:1.5rem">
+        <button class="btn btn-green" onclick="abschliessen()" style="height:52px;font-size:14px;padding:0 28px;width:100%;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Fahrtraining abschliessen
+        </button>
+      </div>
+      <div id="save-status" class="save-status"></div>
+    </div>
+  </div>
+
+  <!-- FERTIG -->
+  <div class="screen" id="s-fertig">
+    <div class="card" style="text-align:center;padding:2rem 1.25rem">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <h2>Fahrt abgeschlossen</h2>
+      <div id="fd-summary-box" style="background:var(--bg2);border-left:4px solid var(--green);padding:1rem;margin:1rem 0;text-align:left;font-size:13px;line-height:1.8;"></div>
+      <div class="btn-row" style="justify-content:center;margin-top:1rem">
+        <button class="btn btn-primary" onclick="neustart()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          Neue Fahrt
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.33</div>
+
+<script>
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
+const FRAGEN_SHEET_ID="1EVK63S1UzguuIxlYgkSLT3_Aw9yZpb_YxuUjTC7fEdU";
+const FAHRZEUGE_B=["PTF 1/6","VA","PTF 4/7","PTF 2/3","OW"];
+const FAHRZEUGE_C=["TLF","ADL","PIF","ULF","OC","SVF","MTF"];
+const FAHRZEUGE=[...FAHRZEUGE_B,...FAHRZEUGE_C];
+const STUETZPUNKT_FAHRZEUGE=["PIF","ULF","OC","SVF","PTF 2/3"];
+
+let selectedKat="";
+const ADDR_CACHE_KEY="fw_adressen_v7";
+const ADDR_TTL=24*60*60*1000; // 1 Tag
+const FRAGEN_CACHE_KEY="fw_fragen_v2";
+const FRAGEN_TTL=7*24*60*60*1000;
+
+const GEMEINDEN_ORTS=["meilen","feldmeilen","herrliberg"];
+const GEMEINDEN_STUETZ=["meilen","feldmeilen","herrliberg","uetikon","oetwil","maennedorf","staefa","hombrechtikon"];
+const GEMEINDE_INFO={
+  meilen:{name:"Meilen",plz:"8706"},feldmeilen:{name:"Feldmeilen",plz:"8706"},
+  herrliberg:{name:"Herrliberg",plz:"8704"},uetikon:{name:"Uetikon am See",plz:"8707"},
+  oetwil:{name:"Oetwil am See",plz:"8618"},maennedorf:{name:"Männedorf",plz:"8708"},
+  staefa:{name:"Stäfa",plz:"8712"},hombrechtikon:{name:"Hombrechtikon",plz:"8634"}
+};
+
+const EINSAETZE_CACHE_KEY="fw_einsaetze";
+const EINSAETZE_TTL=7*24*60*60*1000; // 7 Tage
+let EINSAETZE=[];
+
+async function ladeEinsaetze(){
+  try{
+    const cached=localStorage.getItem(EINSAETZE_CACHE_KEY);
+    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<EINSAETZE_TTL){EINSAETZE=obj.data;return;}}
+  }catch(e){}
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${FRAGEN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=Einsatzmeldungen`;
+    const res=await fetch(url);
+    const text=await res.text();
+    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows=(json.table.rows||[]).slice(1);
+    EINSAETZE=rows.map(row=>{
+      const c=row.c||[];
+      const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
+      return{stichwort:val(0),alarmierung:val(1),meldung:val(2),mittel:val(3)};
+    }).filter(e=>e.meldung);
+    try{localStorage.setItem(EINSAETZE_CACHE_KEY,JSON.stringify({ts:Date.now(),data:EINSAETZE}));}catch(e){}
+  }catch(e){console.warn("Einsatzmeldungen konnten nicht geladen werden:",e);}
+}
+
+let ADRESSEN={};
+let FRAGEN={};
+let ST={};
+let selectedGebiet="";
+let QPOOL=[],QIDX=0;
+
+function ra(a){return a[Math.floor(Math.random()*a.length)];}
+function rn(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
+function today(){return new Date().toISOString().split("T")[0];}
+function nowTime(){return new Date().toTimeString().slice(0,5);}
+function setMsg(m,s=""){document.getElementById("init-msg").textContent=m;document.getElementById("init-sub").textContent=s;}
+
+/* ── Adressen aus Google Sheets ── */
+async function ladeAdressen(){
+  try{
+    const cached=localStorage.getItem(ADDR_CACHE_KEY);
+    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<ADDR_TTL){ADRESSEN=obj.data;return;}}
+  }catch(e){}
+  setMsg("Adressen werden geladen…","Google Sheets");
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/1gmUs6tQBwAlHzGdjJ7jXWrGX9XHgC0yzUbn-LpZ7hbY/gviz/tq?tqx=out:json&sheet=Adressen`;
+    const res=await fetch(url);
+    const text=await res.text();
+    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows=(json.table.rows||[]).slice(1); // Zeile 1 = Header
+    const result={};
+    Object.keys(GEMEINDE_INFO).forEach(k=>{result[k]=[];});
+    for(const row of rows){
+      const c=row.c||[];
+      const val=i=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
+      const gemeinde=val(0).toLowerCase().replace(/\s+/g,"");
+      const str=val(1);
+      const nr=val(2);
+      const plz=val(3);
+      const ort=val(4);
+      if(!gemeinde||!str||!nr) continue;
+      // Gemeinde-Key normalisieren
+      const key=Object.keys(GEMEINDE_INFO).find(k=>
+        k===gemeinde||
+        GEMEINDE_INFO[k].name.toLowerCase().replace(/\s+/g,"")===gemeinde
+      );
+      if(!key) continue;
+      if((result[key]||[]).length>=40) continue;
+      if(!result[key]) result[key]=[];
+      result[key].push({str,nr,plz:plz||GEMEINDE_INFO[key].plz,ort:ort||GEMEINDE_INFO[key].name});
+    }
+    ADRESSEN=result;
+    try{localStorage.setItem(ADDR_CACHE_KEY,JSON.stringify({ts:Date.now(),data:result}));}catch(e){}
+  }catch(e){
+    console.warn("Adressen konnten nicht geladen werden:",e);
+    ADRESSEN={};
+  }
+}
+
+function genAddr(){
+  const pool=ST.gebiet==="stuetzpunkt"?GEMEINDEN_STUETZ:GEMEINDEN_ORTS;
+  const lastStr=ST.einsatzAddr?ST.einsatzAddr.split(",")[0].trim():"";
+  const shuffled=[...pool].sort(()=>Math.random()-0.5);
+  for(const g of shuffled){
+    const list=(ADRESSEN[g]||[]).filter(a=>`${a.str} ${a.nr}`!==lastStr);
+    if(list.length>0) return ra(list);
+  }
+  // Auch letzte Adresse akzeptieren falls keine andere verfügbar
+  for(const g of shuffled){
+    const list=ADRESSEN[g]||[];
+    if(list.length>0) return ra(list);
+  }
+  return null;
+}
+
+/* ── Fragen ── */
+async function ladeFragen(){
+  try{
+    const cached=localStorage.getItem(FRAGEN_CACHE_KEY);
+    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<FRAGEN_TTL){FRAGEN=obj.data;return;}}
+  }catch(e){}
+  setMsg("Fragen werden geladen…","Google Sheets");
+  const result={};
+  const fetchMitTimeout=async(url)=>{
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),5000);
+    try{const r=await fetch(url,{signal:ctrl.signal});return r;}
+    finally{clearTimeout(tid);}
+  };
+  await Promise.all(FAHRZEUGE.map(async fzg=>{
+    try{
+      const url=`https://docs.google.com/spreadsheets/d/${FRAGEN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(fzg)}`;
+      const res=await fetchMitTimeout(url);
+      const text=await res.text();
+      const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+      const rows=(json.table.rows||[]).slice(1);
+      result[fzg]=rows.map(row=>{
+        const c=row.c||[];
+        const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
+        const map={A:0,B:1,C:2,D:3};
+        const typ=val(0).toLowerCase();
+        return{typ:typ||"frage",f:val(1),a:[val(2),val(3),val(4),val(5)],r:map[val(6).toUpperCase()]??0,e:val(7)};
+      }).filter(q=>q.f);
+    }catch(e){result[fzg]=[];}
+  }));
+  FRAGEN=result;
+  try{localStorage.setItem(FRAGEN_CACHE_KEY,JSON.stringify({ts:Date.now(),data:result}));}catch(e){}
+}
+
+/* ── Init ── */
+async function init(){
+  const fehler=[];
+  try{
+    await Promise.all([
+      ladeAdressen().catch(e=>{console.warn("Adressen:",e);fehler.push("Adressen (Einsatzziele)");}),
+      ladeFragen().catch(e=>{console.warn("Fragen:",e);fehler.push("Abfrage-Fragen");}),
+      ladeEinsaetze().catch(e=>{console.warn("Einsaetze:",e);fehler.push("Einsatzmeldungen");})
+    ]);
+    // Prüfe ob Daten wirklich vorhanden
+    const addrCount=Object.values(ADRESSEN).reduce((s,a)=>s+a.length,0);
+    if(addrCount===0&&!fehler.includes("Adressen (Einsatzziele)")) fehler.push("Adressen (Einsatzziele) – Sheet leer oder nicht erreichbar");
+    if(EINSAETZE.length===0&&!fehler.includes("Einsatzmeldungen")) fehler.push("Einsatzmeldungen – Sheet leer oder nicht erreichbar");
+    const fragenCount=Object.values(FRAGEN).reduce((s,a)=>s+a.length,0);
+    if(fragenCount===0&&!fehler.includes("Abfrage-Fragen")) fehler.push("Abfrage-Fragen – Sheets leer oder nicht erreichbar");
+  }catch(e){console.warn("Init-Fehler:",e);fehler.push("Unbekannter Ladefehler");}
+  finally{
+    hideOverlay();
+    showLoadPopup(fehler);
+  }
+}
+
+/* ── Form 1 ── */
+function selectKat(kat){
+  selectedKat=kat;
+  document.getElementById("rc-kat-b").classList.toggle("selected",kat==="B");
+  document.getElementById("rc-kat-c").classList.toggle("selected",kat==="C");
+  const sel=document.getElementById("f-fahrzeug");
+  const list=kat==="B"?FAHRZEUGE_B:FAHRZEUGE_C;
+  sel.innerHTML='<option value="">– wählen –</option>'+list.map(f=>`<option>${f}</option>`).join("");
+  document.getElementById("fahrzeug-wrap").style.display="block";
+  // Reset gebiet
+  selectedGebiet="orts";
+  document.getElementById("gebiet-wrap").style.display="none";
+  document.getElementById("rc-stuetzpunkt").classList.remove("selected");
+  document.getElementById("rc-orts").classList.remove("selected");
+}
+
+function selectGebiet(val){
+  selectedGebiet=val;
+  document.getElementById("rc-stuetzpunkt").classList.toggle("selected",val==="stuetzpunkt");
+  document.getElementById("rc-orts").classList.toggle("selected",val==="orts");
+}
+
+function weiter(){
+  const fa=document.getElementById("f-fahrer").value.trim().toUpperCase();
+  const bf=document.getElementById("f-beifahrer").value.trim().toUpperCase();
+  const dat=document.getElementById("f-datum").value;
+  const abf=document.getElementById("f-abfahrt").value;
+  const fzg=document.getElementById("f-fahrzeug").value;
+  const fahrt=document.getElementById("f-fahrt").value;
+  const aufbau=document.getElementById("f-aufbau").value;
+  const needsGebiet=STUETZPUNKT_FAHRZEUGE.includes(fzg);
+  const err=document.getElementById("form1-err");
+  if(!fa||!bf||!dat||!abf||!fzg||!fahrt||!aufbau||!selectedKat||(needsGebiet&&!selectedGebiet)){err.style.display="block";return;}
+  err.style.display="none";
+  ST={fahrer:fa,beifahrer:bf,datum:dat,abfahrt:abf,fahrzeug:fzg,fahrt,aufbau,
+      gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0};
+  if(fahrt==="frei"){
+    document.getElementById("gf-info").textContent=`${fzg} · ${fa} / ${bf}`;
+    const btnRow=document.getElementById("gf-btn-row");
+    if(aufbau==="abfrage"){
+      btnRow.innerHTML=`<button class="btn btn-primary" onclick="fahrtBeenden()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        Weiter zu Aufbau
+      </button>`;
+    } else {
+      btnRow.innerHTML=`<button class="btn btn-red" onclick="fahrtBeenden()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        Fahrt beenden
+      </button>`;
+    }
+    show("s-gute-fahrt");
+  } else if(fahrt==="einsatz") zeigeEinsatz();
+  else if(aufbau==="abfrage") starteAbfrage();
+  else zeigeAbschluss();
+}
+
+/* ── Einsatz ── */
+function zeigeEinsatz(){
+  const ad=genAddr();
+  if(!ad){
+    alert("Keine Adressen verfügbar. Bitte Internetverbindung prüfen und Seite neu laden.");
+    show("s-form1");
+    return;
+  }
+  // Filter Einsatzmeldungen nach gewähltem Fahrzeug
+  const fzg=ST.fahrzeug;
+  const isPTF=fzg.startsWith("PTF");
+  const passend=EINSAETZE.filter(e=>{
+    const mittelTeile=e.mittel.split(/[\s,]+/).map(m=>m.trim().toLowerCase()).filter(Boolean);
+    if(isPTF&&mittelTeile.includes("ptf")) return true;
+    return mittelTeile.includes(fzg.toLowerCase());
+  });
+  const pool=passend.length>0?passend:EINSAETZE;
+  const ens=ra(pool);
+
+  ST.einsatzAddr=`${ad.str} ${ad.nr}, ${ad.plz} ${ad.ort}`;
+  ST.einsatzCount=(ST.einsatzCount||0)+1;
+  if(!ST.einsatzAddrListe) ST.einsatzAddrListe=[];
+  ST.einsatzAddrListe.push(ST.einsatzAddr);
+  document.getElementById("e-stichwort").textContent=ens.stichwort;
+
+  // Alarmierung Badge
+  const almBadge=document.getElementById("e-alarmierung");
+  if(ens.alarmierung){
+    almBadge.textContent=ens.alarmierung;
+    almBadge.style.display="inline-block";
+  } else {
+    almBadge.style.display="none";
+  }
+
+  document.getElementById("e-addr").textContent=`${ad.str} ${ad.nr}`;
+  document.getElementById("e-city").textContent=`${ad.plz} ${ad.ort}`;
+  document.getElementById("e-meldung").textContent=ens.meldung;
+  // Einsatzmittel: gewähltes Fahrzeug immer zuerst
+  const mittelRaw=ens.mittel||"";
+  const hatFzg=mittelRaw.toLowerCase().includes(fzg.toLowerCase());
+  document.getElementById("e-mittel").textContent=hatFzg?mittelRaw:`${fzg}, ${mittelRaw}`;
+
+  const q=encodeURIComponent(`${ad.str} ${ad.nr}, ${ad.plz} ${ad.ort}, Schweiz`);
+  const url=`https://www.google.com/maps/search/?api=1&query=${q}`;
+  document.getElementById("e-mapslink").href=url;
+  drawQR(document.getElementById("e-qr"),url,100);
+  show("s-einsatz");
+}
+
+function fahrtBeenden(){
+  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeAbschluss();
+}
+
+function einsatzOrtErreicht(){
+  show("s-nach-einsatz");
+}
+
+function nochEinEinsatz(){
+  zeigeEinsatz();
+}
+
+function weiterNachEinsatz(){
+  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeAbschluss();
+}
+
+/* ── Abfrage ── */
+function starteAbfrage(){
+  // Versuche exakten Namen, dann ohne Leerzeichen/Sonderzeichen
+  const fzg=ST.fahrzeug;
+  let pool=FRAGEN[fzg]||[];
+  // Fallback: suche nach ähnlichem Key
+  if(pool.length===0){
+    const key=Object.keys(FRAGEN).find(k=>k.toLowerCase()===fzg.toLowerCase());
+    if(key) pool=FRAGEN[key]||[];
+  }
+  if(pool.length===0){
+    // Keine Fragen für dieses Fahrzeug – direkt zum Abschluss
+    ST.quizResults=[];
+    zeigeAbschluss();
+    return;
+  }
+  // 3 zufällige Tätigkeiten + 6 zufällige Fragen
+  const taetigkeiten=[...pool.filter(q=>q.typ==="tätigkeit"||q.typ==="taetigkeit")].sort(()=>Math.random()-0.5).slice(0,3);
+  const fragen=[...pool.filter(q=>q.typ!=="tätigkeit"&&q.typ!=="taetigkeit")].sort(()=>Math.random()-0.5).slice(0,6);
+  QPOOL=[...taetigkeiten,...fragen].sort(()=>Math.random()-0.5);
+  QIDX=0;ST.quizResults=[];ST.taetigkeitResults=[];
+  zeigeFrageUI();show("s-abfrage");
+}
+
+function zeigeFrageUI(){
+  const q=QPOOL[QIDX],total=QPOOL.length;
+  document.getElementById("q-progress").style.width=`${(QIDX/total)*100}%`;
+  document.getElementById("q-nr").textContent=`${QIDX+1} von ${total}`;
+  document.getElementById("q-text").textContent=q.f;
+  document.getElementById("q-erklaerung").style.display="none";
+  document.getElementById("q-next-row").style.display="none";
+  document.getElementById("q-hilfe-box").style.display="none";
+  document.getElementById("q-hilfe-text").value="";
+  const isTaetigkeit=(q.typ==="tätigkeit"||q.typ==="taetigkeit");
+  // Typ-Badge
+  const badge=document.getElementById("q-typ-badge");
+  badge.innerHTML=isTaetigkeit
+    ?`<span class="typ-badge typ-badge-taetigkeit">Tätigkeit</span>`
+    :`<span class="typ-badge typ-badge-frage">Frage</span>`;
+  if(isTaetigkeit){
+    document.getElementById("q-antworten").innerHTML=`
+      <button class="stufe-btn" id="stufe-1" onclick="bewerteStudfe(1)">1 &nbsp;·&nbsp; Konnte ich ohne weiteres umsetzen</button>
+      <button class="stufe-btn" id="stufe-2" onclick="bewerteStudfe(2)">2 &nbsp;·&nbsp; Musste ich nachschauen / brauchte Hilfe</button>
+      <button class="stufe-btn" id="stufe-3" onclick="bewerteStudfe(3)">3 &nbsp;·&nbsp; Konnten wir zusammen nicht</button>`;
+  } else {
+    const shuffled=q.a.map((t,i)=>({t,i})).sort(()=>Math.random()-0.5);
+    document.getElementById("q-antworten").innerHTML=shuffled.map(x=>
+      `<button class="antwort-btn" data-idx="${x.i}" onclick="antworten(${x.i})">${x.t}</button>`
+    ).join("");
+  }
+}
+
+function bewerteStudfe(stufe){
+  document.querySelectorAll(".stufe-btn").forEach(b=>b.disabled=true);
+  document.getElementById(`stufe-${stufe}`).classList.add(`selected-${stufe}`);
+  const q=QPOOL[QIDX];
+  if(!ST.taetigkeitResults) ST.taetigkeitResults=[];
+  ST.taetigkeitResults.push({frage:q.f,stufe:stufe,hilfe:""});
+  if(stufe===3){
+    document.getElementById("q-hilfe-box").style.display="block";
+  }
+  document.getElementById("q-next-row").style.display="flex";
+}
+
+function antworten(idx){
+  const q=QPOOL[QIDX];
+  const richtig=idx===q.r;
+  ST.quizResults.push({frage:q.f,richtig:richtig,gegeben:q.a[idx],korrekt:q.a[q.r]});
+  document.querySelectorAll(".antwort-btn").forEach(btn=>{
+    btn.disabled=true;
+    const bi=parseInt(btn.getAttribute("data-idx"));
+    if(bi===q.r) btn.classList.add("correct");
+    else if(bi===idx&&!richtig) btn.classList.add("wrong");
+  });
+  if(q.e){const el=document.getElementById("q-erklaerung");el.textContent=q.e;el.style.display="block";}
+  document.getElementById("q-next-row").style.display="flex";
+}
+
+function naechsteFrage(){
+  // Hilfe-Text bei Stufe 3 speichern
+  if(ST.taetigkeitResults&&ST.taetigkeitResults.length>0){
+    const last=ST.taetigkeitResults[ST.taetigkeitResults.length-1];
+    if(last.stufe===3){
+      last.hilfe=document.getElementById("q-hilfe-text").value.trim();
+    }
+  }
+  QIDX++;
+  if(QIDX>=QPOOL.length) zeigeAbschluss(); else zeigeFrageUI();
+}
+
+/* ── Abschluss ── */
+function zeigeAbschluss(){
+  document.getElementById("ac-rueckkehr").value=nowTime();
+  const gl=ST.gebiet==="stuetzpunkt"?"Stützpunktgebiet":"Ortsfeuerwehrgebiet";
+  document.getElementById("ac-chips").innerHTML=
+    `<span class="chip">${ST.fahrer} / ${ST.beifahrer}</span><span class="chip">${ST.fahrzeug}</span><span class="chip">${gl}</span><span class="chip">${ST.datum}</span><span class="chip">Abfahrt ${ST.abfahrt}</span>${ST.einsatzCount>0?`<span class="chip">${ST.einsatzCount}× Einsatz</span>`:""}`;
+  // Tätigkeit-Auswertung
+  const tr=document.getElementById("ac-taetigkeit-result");
+  const taetList=ST.taetigkeitResults||[];
+  if(taetList.length>0){
+    tr.style.display="block";
+    const stufeLabel=["","Ohne weiteres","Nachgeschaut / Hilfe","Nicht gelöst"];
+    const stufeBadge=["","badge-green","","badge-red"];
+    document.getElementById("ac-taetigkeit-detail").innerHTML=taetList.map((t,i)=>`
+      <div class="sum-row">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="color:var(--text2)">T${i+1}: ${t.frage}</div>
+          <span class="badge ${stufeBadge[t.stufe]||"badge-blue"}">Stufe ${t.stufe}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${stufeLabel[t.stufe]}</div>
+        ${t.stufe===3&&t.hilfe?`<div style="font-size:12px;color:var(--red-dark);margin-top:3px;font-style:italic">Hilfe: ${t.hilfe}</div>`:""}
+      </div>`).join("");
+  }else{tr.style.display="none";}
+  // Quiz-Auswertung
+  const qr=document.getElementById("ac-quiz-result");
+  if(ST.quizResults.length>0){
+    qr.style.display="block";
+    const richtig=ST.quizResults.filter(x=>x.richtig).length,total=ST.quizResults.length,pct=Math.round(richtig/total*100);
+    document.getElementById("ac-stats").innerHTML=`
+      <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Fragen</div></div>
+      <div class="stat-card"><div class="stat-val">${richtig}</div><div class="stat-lbl">Richtig</div></div>
+      <div class="stat-card"><div class="stat-val">${pct}%</div><div class="stat-lbl">Ergebnis</div></div>`;
+    document.getElementById("ac-detail").innerHTML=ST.quizResults.map((x,i)=>`
+      <div class="sum-row">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="color:var(--text2)">F${i+1}: ${x.frage}</div>
+          <span class="badge ${x.richtig?"badge-green":"badge-red"}">${x.richtig?"✓":"✗"}</span>
+        </div>
+        ${!x.richtig?`<div style="font-size:12px;color:var(--text3);margin-top:3px">Korrekt: ${x.korrekt}</div>`:""}
+      </div>`).join("");
+  }else{qr.style.display="none";}
+  show("s-abschluss");
+}
+
+async function abschliessen(){
+  const rk=document.getElementById("ac-rueckkehr").value;
+  const richtig=ST.quizResults.filter(x=>x.richtig).length;
+  const total=ST.quizResults.length;
+  const pct=total>0?Math.round(richtig/total*100):0;
+  const gl=ST.gebiet==="stuetzpunkt"?"Stützpunktgebiet":"Ortsfeuerwehrgebiet";
+  const statusEl=document.getElementById("save-status");
+  statusEl.style.display="block";statusEl.className="save-status";statusEl.textContent="Wird gespeichert…";
+  try{
+    const hilfeText=(ST.taetigkeitResults||[]).filter(t=>t.stufe===3&&t.hilfe).map(t=>`${t.frage}: ${t.hilfe}`).join("\n");
+    await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({type:"alles",
+        fahrt:{datum:ST.datum,fahrer:ST.fahrer,beifahrer:ST.beifahrer,fahrzeug:ST.fahrzeug,
+               fahrt:ST.fahrt,aufbau:ST.aufbau,gebiet:gl,abfahrt:ST.abfahrt,rueckkehr:rk,
+               einsatzAddr:ST.einsatzAddr||"–",einsatzCount:ST.einsatzCount||0,
+               richtig:total>0?richtig:"–",total:total>0?total:"–",pct:total>0?pct+"%" :"–",
+               anzahlEinsaetze:ST.einsatzCount||0,
+               alleAdressen:ST.einsatzAddrListe?(ST.einsatzAddrListe.join("\n")||"–"):"–",
+               hilfe:hilfeText||""},
+        fragen:ST.quizResults.map(q=>({datum:ST.datum,fahrer:ST.fahrer,fahrzeug:ST.fahrzeug,
+               frage:q.frage,gegeben:q.gegeben,korrekt:q.korrekt,richtig:q.richtig?"JA":"NEIN"}))
+      })
+    });
+    const stufeLabel=["","Ohne weiteres","Nachgeschaut","Nicht gelöst"];
+    const taetList=ST.taetigkeitResults||[];
+    let summaryHtml=`<strong>${ST.fahrer} / ${ST.beifahrer}</strong> · ${ST.fahrzeug} · ${gl}<br>${ST.datum} · ${ST.abfahrt}–${rk}`;
+    if(ST.einsatzCount>0) summaryHtml+=`<br>${ST.einsatzCount}× Einsatz`;
+    if(total>0) summaryHtml+=`<br>Quiz: ${richtig} von ${total} richtig (${pct}%)`;
+    if(taetList.length>0){
+      summaryHtml+=`<br><br><strong>Tätigkeiten:</strong>`;
+      taetList.forEach((t,i)=>{
+        summaryHtml+=`<br>T${i+1}: ${t.frage} – <em>Stufe ${t.stufe}: ${stufeLabel[t.stufe]}</em>`;
+        if(t.stufe===3&&t.hilfe) summaryHtml+=`<br>&nbsp;&nbsp;↳ ${t.hilfe}`;
+      });
+    }
+    document.getElementById("fd-summary-box").innerHTML=summaryHtml;
+    show("s-fertig");
+  }catch(e){
+    statusEl.className="save-status save-err";
+    statusEl.textContent="Fehler beim Speichern. Bitte Internetverbindung prüfen.";
+  }
+}
+
+function neustart(){
+  selectedGebiet="";selectedKat="";
+  document.getElementById("rc-kat-b").classList.remove("selected");
+  document.getElementById("rc-kat-c").classList.remove("selected");
+  document.getElementById("fahrzeug-wrap").style.display="none";
+  document.getElementById("rc-stuetzpunkt").classList.remove("selected");
+  document.getElementById("rc-orts").classList.remove("selected");
+  document.getElementById("gebiet-wrap").style.display="none";
+  document.getElementById("f-fahrer").value="";
+  document.getElementById("f-beifahrer").value="";
+  document.getElementById("f-datum").value=today();
+  document.getElementById("f-abfahrt").value=nowTime();
+  document.getElementById("f-fahrzeug").value="";
+  document.getElementById("f-fahrt").value="einsatz";
+  document.getElementById("f-aufbau").value="abfrage";
+  show("s-form1");
+}
+
+function drawQR(canvas,text,size){
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="white";ctx.fillRect(0,0,size,size);
+  const mod=25,cell=Math.floor((size-12)/mod),off=Math.floor((size-mod*cell)/2);
+  const m=Array.from({length:mod},()=>new Array(mod).fill(0));
+  [[0,0],[0,mod-7],[mod-7,0]].forEach(([rr,c])=>{
+    for(let i=0;i<7;i++)for(let j=0;j<7;j++){if(i===0||i===6||j===0||j===6||(i>=2&&i<=4&&j>=2&&j<=4))m[rr+i][c+j]=1;}
+  });
+  let seed=0;for(let i=0;i<text.length;i++)seed=(seed*31+text.charCodeAt(i))&0xffffffff;
+  const rng=()=>{seed=((seed*1664525)+1013904223)&0xffffffff;return(seed>>>0)/4294967296;};
+  const fixed=new Set();
+  for(let i=0;i<7;i++)for(let j=0;j<7;j++){fixed.add(`${i},${j}`);fixed.add(`${i},${mod-7+j}`);fixed.add(`${mod-7+i},${j}`);}
+  for(let rr=0;rr<mod;rr++)for(let c=0;c<mod;c++){if(!fixed.has(`${rr},${c}`))m[rr][c]=rng()>0.5?1:0;}
+  ctx.fillStyle="#111";
+  for(let rr=0;rr<mod;rr++)for(let c=0;c<mod;c++){if(m[rr][c])ctx.fillRect(off+c*cell,off+rr*cell,cell,cell);}
+}
+
+function hideOverlay(){
+  document.getElementById("init-overlay").style.display="none";
+  document.getElementById("f-datum").value=today();
+  document.getElementById("f-abfahrt").value=nowTime();
+}
+
+function showLoadPopup(fehler){
+  if(!fehler||fehler.length===0) return;
+  document.getElementById("load-popup-list").innerHTML=fehler.map(f=>`• ${f}`).join("<br>");
+  document.getElementById("load-popup").style.display="block";
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("f-fahrzeug").addEventListener("change",function(){
+    const fzg=this.value;
+    const wrap=document.getElementById("gebiet-wrap");
+    if(STUETZPUNKT_FAHRZEUGE.includes(fzg)){wrap.style.display="block";}
+    else{wrap.style.display="none";selectedGebiet="orts";
+      document.getElementById("rc-stuetzpunkt").classList.remove("selected");
+      document.getElementById("rc-orts").classList.remove("selected");}
+  });
+  // Sicherheits-Timeout: Overlay wird nach 10s immer ausgeblendet
+  setTimeout(hideOverlay, 10000);
+  init();
+});
+</script>
+<div class="load-popup" id="load-popup">
+  <button class="load-popup-close" onclick="document.getElementById('load-popup').style.display='none'">✕</button>
+  <div class="load-popup-title">⚠ Nicht geladen</div>
+  <div class="load-popup-list" id="load-popup-list"></div>
+</div>
+</body>
+</html>
