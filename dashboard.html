@@ -117,6 +117,24 @@ select.filter{height:32px;padding:0 8px;border:1px solid var(--gray-mid);backgro
       <div id="fahrer-list"></div>
     </div>
 
+    <!-- Pie Charts -->
+    <div class="grid2" style="margin-top:1rem">
+      <div class="card">
+        <h2>Fahrt: Frei vs. Einsatzmeldung</h2>
+        <div class="chart-wrap" style="height:220px"><canvas id="chart-fahrt-pie"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Aufbau: Frei vs. Abfrage</h2>
+        <div class="chart-wrap" style="height:220px"><canvas id="chart-aufbau-pie"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Ausbildungsunterstützung -->
+    <div class="card" id="hilfe-card" style="display:none">
+      <h2>Ausbildungsunterstützung / Unklarheiten</h2>
+      <div id="hilfe-list"></div>
+    </div>
+
     <!-- Fragen -->
     <div class="card">
       <h2>Falsch beantwortete Fragen</h2>
@@ -129,16 +147,10 @@ select.filter{height:32px;padding:0 8px;border:1px solid var(--gray-mid);backgro
       <div class="updated" id="updated-label"></div>
     </div>
 
-    <!-- Ausbildungsunterstützung -->
-    <div class="card" id="hilfe-card" style="display:none">
-      <h2>Ausbildungsunterstützung / Unklarheiten</h2>
-      <div id="hilfe-list"></div>
-    </div>
-
   </div>
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.35</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.36</div>
 
 <script>
 const SHEET_ID = "1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
@@ -192,6 +204,75 @@ function render() {
   populateFahrzeugFilter();
   renderFragen();
   renderHilfe();
+  renderPieCharts();
+}
+
+function renderPieCharts() {
+  const f = DATA.fahrten;
+
+  // Fahrt: frei vs einsatz
+  const fahrtCount = {frei:0, einsatz:0};
+  f.forEach(r => {
+    const v = String(r["Fahrt"]||"").trim().toLowerCase();
+    if(v==="frei") fahrtCount.frei++;
+    else if(v==="einsatz") fahrtCount.einsatz++;
+  });
+
+  if(charts.fahrtPie) charts.fahrtPie.destroy();
+  charts.fahrtPie = new Chart(document.getElementById("chart-fahrt-pie"), {
+    type: "pie",
+    data: {
+      labels: ["Freies Fahren","Einsatzmeldung"],
+      datasets:[{
+        data:[fahrtCount.frei, fahrtCount.einsatz],
+        backgroundColor:["#1a1a1a","#CC0000"],
+        borderWidth:2, borderColor:"#fff"
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:"bottom", labels:{font:{size:12}, padding:12}},
+        tooltip:{callbacks:{label:ctx=>{
+          const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          const pct=total>0?Math.round(ctx.parsed/total*100):0;
+          return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+        }}}
+      }
+    }
+  });
+
+  // Aufbau: frei vs abfrage
+  const aufbauCount = {frei:0, abfrage:0};
+  f.forEach(r => {
+    const v = String(r["Aufbau"]||"").trim().toLowerCase();
+    if(v==="ueben") aufbauCount.frei++;
+    else if(v==="abfrage") aufbauCount.abfrage++;
+  });
+
+  if(charts.aufbauPie) charts.aufbauPie.destroy();
+  charts.aufbauPie = new Chart(document.getElementById("chart-aufbau-pie"), {
+    type: "pie",
+    data: {
+      labels: ["Freies Üben","Abfrage"],
+      datasets:[{
+        data:[aufbauCount.frei, aufbauCount.abfrage],
+        backgroundColor:["#1a1a1a","#CC0000"],
+        borderWidth:2, borderColor:"#fff"
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:"bottom", labels:{font:{size:12}, padding:12}},
+        tooltip:{callbacks:{label:ctx=>{
+          const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          const pct=total>0?Math.round(ctx.parsed/total*100):0;
+          return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+        }}}
+      }
+    }
+  });
 }
 
 function renderHilfe() {
