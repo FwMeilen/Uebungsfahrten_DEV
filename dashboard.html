@@ -117,18 +117,6 @@ select.filter{height:32px;padding:0 8px;border:1px solid var(--gray-mid);backgro
       <div id="fahrer-list"></div>
     </div>
 
-    <!-- Pie Charts -->
-    <div class="grid2" style="margin-top:1rem">
-      <div class="card">
-        <h2>Fahrt: Frei vs. Einsatzmeldung</h2>
-        <div class="chart-wrap" style="height:220px"><canvas id="chart-fahrt-pie"></canvas></div>
-      </div>
-      <div class="card">
-        <h2>Aufbau: Frei vs. Abfrage</h2>
-        <div class="chart-wrap" style="height:220px"><canvas id="chart-aufbau-pie"></canvas></div>
-      </div>
-    </div>
-
     <!-- Ausbildungsunterstützung -->
     <div class="card" id="hilfe-card" style="display:none">
       <h2>Ausbildungsunterstützung / Unklarheiten</h2>
@@ -147,10 +135,22 @@ select.filter{height:32px;padding:0 8px;border:1px solid var(--gray-mid);backgro
       <div class="updated" id="updated-label"></div>
     </div>
 
+    <!-- Pie Charts -->
+    <div class="grid2" style="margin-top:1rem">
+      <div class="card">
+        <h2>Fahrt: Frei vs. Einsatzmeldung</h2>
+        <div class="chart-wrap" style="height:220px"><canvas id="chart-fahrt-pie"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Aufbau: Frei vs. Abfrage</h2>
+        <div class="chart-wrap" style="height:220px"><canvas id="chart-aufbau-pie"></canvas></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.36</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.37</div>
 
 <script>
 const SHEET_ID = "1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
