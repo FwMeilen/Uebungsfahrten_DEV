@@ -344,7 +344,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.33</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.35</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -733,6 +733,14 @@ function naechsteFrage(){
 
 /* ── Abschluss ── */
 function zeigeAbschluss(){
+  // Hilfe-Text des letzten Eintrags sichern (falls direkt von naechsteFrage aufgerufen)
+  if(ST.taetigkeitResults&&ST.taetigkeitResults.length>0){
+    const last=ST.taetigkeitResults[ST.taetigkeitResults.length-1];
+    if(last.stufe===3){
+      const txt=document.getElementById("q-hilfe-text");
+      if(txt&&txt.value.trim()) last.hilfe=txt.value.trim();
+    }
+  }
   document.getElementById("ac-rueckkehr").value=nowTime();
   const gl=ST.gebiet==="stuetzpunkt"?"Stützpunktgebiet":"Ortsfeuerwehrgebiet";
   document.getElementById("ac-chips").innerHTML=
