@@ -238,10 +238,44 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="alarm-meld"><div class="alarm-lbl">Meldung</div><div class="alarm-text" id="e-meldung"></div></div>
       <div class="alarm-meld"><div class="alarm-lbl">Einsatzmittel</div><div class="alarm-text" id="e-mittel"></div></div>
+      <div class="alarm-meld" id="e-feststellungen-block">
+        <div class="alarm-lbl">Feststellungen der Feuerwehr</div>
+        <div id="e-feststellungen-content" style="font-size:13px;line-height:1.8;color:var(--text2);"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic;">Bitte im nächsten Screen korrigieren, falls nicht mehr aktuell</div>
+      </div>
       <div class="btn-row">
         <button class="btn btn-green" onclick="einsatzOrtErreicht()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Bei Einsatzort angekommen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOR ORT -->
+  <div class="screen" id="s-einsatz-vor-ort">
+    <div class="disclaimer">
+      <div class="disclaimer-title">⚠ Übungsmeldung</div>
+      <div class="disclaimer-sub">Kein Einsatz – Kein Sondersignal!</div>
+    </div>
+    <div class="card" style="border-top-color:var(--black)">
+      <h2 id="vor-ort-adresse"></h2>
+      <p class="sub" id="vor-ort-city"></p>
+      <div class="divider"></div>
+      <!-- Zufällige Frage -->
+      <div id="vor-ort-frage-block">
+        <h3 id="vor-ort-frage-titel"></h3>
+        <div id="vor-ort-frage-input"></div>
+      </div>
+      <div class="divider"></div>
+      <!-- Zufahrt -->
+      <h3>Zufahrt zur Liegenschaft</h3>
+      <p class="sub" style="margin-bottom:0.5rem">Gibt es wichtige Informationen zur Zufahrt für die Feuerwehr?</p>
+      <textarea id="vor-ort-zufahrt" placeholder="Zufahrtshinweise…" style="width:100%;min-height:70px;padding:8px 10px;border:1px solid var(--gray-mid);font-size:13px;font-family:inherit;resize:vertical;border-radius:0;"></textarea>
+      <div class="btn-row" style="margin-top:1.5rem">
+        <button class="btn btn-green" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="einsatzVorOrtAbschliessen()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Einsatz abschliessen
         </button>
       </div>
     </div>
@@ -261,6 +295,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="screen" id="s-nach-einsatz">
     <div class="card">
       <h2>Einsatz abgeschlossen</h2>
+      <div id="fahrzeit-block" style="display:none;background:var(--bg2);border-left:4px solid var(--black);padding:0.75rem 1rem;margin-bottom:1rem;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray);margin-bottom:2px;">Fahrzeit</div>
+        <div id="fahrzeit-anzeige" style="font-size:22px;font-weight:700;"></div>
+      </div>
       <p class="sub">Wie weiter?</p>
       <div class="choice-grid">
         <div class="choice-card" onclick="nochEinEinsatz()">
@@ -345,7 +383,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.38</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.40</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -356,7 +394,7 @@ const FAHRZEUGE=[...FAHRZEUGE_B,...FAHRZEUGE_C];
 const STUETZPUNKT_FAHRZEUGE=["PIF","ULF","OC","SVF","PTF 2/3"];
 
 let selectedKat="";
-const ADDR_CACHE_KEY="fw_adressen_v7";
+const ADDR_CACHE_KEY="fw_adressen_v9";
 const ADDR_TTL=24*60*60*1000; // 1 Tag
 const FRAGEN_CACHE_KEY="fw_fragen_v2";
 const FRAGEN_TTL=7*24*60*60*1000;
@@ -556,7 +594,7 @@ function weiter(){
   if(!fa||!bf||!dat||!abf||!fzg||!fahrt||!aufbau||!selectedKat||(needsGebiet&&!selectedGebiet)){err.style.display="block";return;}
   err.style.display="none";
   ST={fahrer:fa,beifahrer:bf,datum:dat,abfahrt:abf,fahrzeug:fzg,fahrt,aufbau,
-      gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0};
+      gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0,einsatzZeit:null,einsatzAddrObj:null};
   if(fahrt==="frei"){
     document.getElementById("gf-info").textContent=`${fzg} · ${fa} / ${bf}`;
     const btnRow=document.getElementById("gf-btn-row");
@@ -597,9 +635,13 @@ function zeigeEinsatz(){
   const ens=ra(pool);
 
   ST.einsatzAddr=`${ad.str} ${ad.nr}, ${ad.plz} ${ad.ort}`;
+  ST.einsatzZeit=Date.now();
+  ST.einsatzAddrObj=ad;
   ST.einsatzCount=(ST.einsatzCount||0)+1;
   if(!ST.einsatzAddrListe) ST.einsatzAddrListe=[];
   ST.einsatzAddrListe.push(ST.einsatzAddr);
+  // Feststellungen-Block ausgeblendet (Daten kommen aus Auswertungs-Sheet)
+  document.getElementById("e-feststellungen-block").style.display="none";
   document.getElementById("e-stichwort").textContent=ens.stichwort;
 
   // Alarmierung Badge
@@ -631,6 +673,70 @@ function fahrtBeenden(){
 }
 
 function einsatzOrtErreicht(){
+  // Fahrzeit berechnen
+  if(ST.einsatzZeit){
+    const mins=Math.round((Date.now()-ST.einsatzZeit)/60000);
+    const h=Math.floor(mins/60),m=mins%60;
+    const txt=h>0?`${h}h ${m}min`:`${m} min`;
+    document.getElementById("fahrzeit-anzeige").textContent=txt;
+    document.getElementById("fahrzeit-block").style.display="block";
+  }
+  // Vor-Ort Screen aufbauen
+  const ad=ST.einsatzAddrObj;
+  if(ad){
+    document.getElementById("vor-ort-adresse").textContent=`${ad.str} ${ad.nr}`;
+    document.getElementById("vor-ort-city").textContent=`${ad.plz} ${ad.ort}`;
+  }
+  // Zufällige Frage wählen
+  const fragen=[
+    {id:"hydrant",titel:"Wo ist der nächste Hydrant?",typ:"text",placeholder:"z.B. Ecke Hauptstrasse / beim Brunnen"},
+    {id:"schluessel",titel:"Hat es hier ein Schlüsselrohr?",typ:"jnein"},
+    {id:"pv",titel:"Hat dieses Gebäude eine Photovoltaikanlage?",typ:"jnein"}
+  ];
+  ST.vorOrtFrage=fragen[Math.floor(Math.random()*fragen.length)];
+  const fq=ST.vorOrtFrage;
+  document.getElementById("vor-ort-frage-titel").textContent=fq.titel;
+  const inputEl=document.getElementById("vor-ort-frage-input");
+  if(fq.typ==="text"){
+    inputEl.innerHTML=`<input type="text" id="vor-ort-antwort" placeholder="${fq.placeholder}" style="margin-top:4px;">`;
+  } else {
+    inputEl.innerHTML=`<div class="radio-group" style="margin-top:6px;">
+      <div class="radio-card" id="vof-ja" onclick="selectVorOrt('Ja')">Ja</div>
+      <div class="radio-card" id="vof-nein" onclick="selectVorOrt('Nein')">Nein</div>
+    </div>`;
+  }
+  // Zufahrt vorausfüllen falls vorhanden
+  document.getElementById("vor-ort-zufahrt").value=(ad&&ad.anmerkung)||"";
+  show("s-einsatz-vor-ort");
+}
+
+let vorOrtAuswahl="";
+function selectVorOrt(val){
+  vorOrtAuswahl=val;
+  document.getElementById("vof-ja").classList.toggle("selected",val==="Ja");
+  document.getElementById("vof-nein").classList.toggle("selected",val==="Nein");
+}
+
+async function einsatzVorOrtAbschliessen(){
+  const fq=ST.vorOrtFrage;
+  let antwort="";
+  if(fq&&fq.typ==="text"){
+    antwort=document.getElementById("vor-ort-antwort").value.trim();
+  } else {
+    antwort=vorOrtAuswahl;
+  }
+  const zufahrt=document.getElementById("vor-ort-zufahrt").value.trim();
+  // Rückmeldung ins Auswertungs-Sheet speichern
+  const ad=ST.einsatzAddrObj;
+  if(ad){
+    const payload={type:"rueckmeldung",
+      datum:ST.datum,fahrer:ST.fahrer,fahrzeug:ST.fahrzeug,
+      gemeinde:ad.ort,strasse:ad.str,nr:ad.nr,plz:ad.plz,ort:ad.ort,
+      frageId:fq?fq.id:"",antwort:antwort||"",zufahrt:zufahrt||""
+    };
+    try{await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});}
+    catch(e){console.warn("Rückmeldung Fehler:",e);}
+  }
   show("s-nach-einsatz");
 }
 
