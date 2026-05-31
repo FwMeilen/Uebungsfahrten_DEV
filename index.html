@@ -238,11 +238,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="alarm-meld"><div class="alarm-lbl">Meldung</div><div class="alarm-text" id="e-meldung"></div></div>
       <div class="alarm-meld"><div class="alarm-lbl">Einsatzmittel</div><div class="alarm-text" id="e-mittel"></div></div>
-      <div class="alarm-meld" id="e-feststellungen-block">
-        <div class="alarm-lbl">Feststellungen der Feuerwehr</div>
-        <div id="e-feststellungen-content" style="font-size:13px;line-height:1.8;color:var(--text2);"></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic;">Bitte im nächsten Screen korrigieren, falls nicht mehr aktuell</div>
-      </div>
       <div class="btn-row">
         <button class="btn btn-green" onclick="einsatzOrtErreicht()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -271,7 +266,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <!-- Zufahrt -->
       <h3>Zufahrt zur Liegenschaft</h3>
       <p class="sub" style="margin-bottom:0.5rem">Gibt es wichtige Informationen zur Zufahrt für die Feuerwehr?</p>
-      <textarea id="vor-ort-zufahrt" placeholder="Zufahrtshinweise…" style="width:100%;min-height:70px;padding:8px 10px;border:1px solid var(--gray-mid);font-size:13px;font-family:inherit;resize:vertical;border-radius:0;"></textarea>
+      <div class="radio-group" style="margin-bottom:0.75rem;">
+        <div class="radio-card" id="zufahrt-ja" onclick="selectZufahrt('ja')">Ja</div>
+        <div class="radio-card" id="zufahrt-nein" onclick="selectZufahrt('nein')">Nein</div>
+      </div>
+      <div id="zufahrt-text-wrap" style="display:none">
+        <textarea id="vor-ort-zufahrt" placeholder="Zufahrtshinweise…" style="width:100%;min-height:70px;padding:8px 10px;border:1px solid var(--gray-mid);font-size:13px;font-family:inherit;resize:vertical;border-radius:0;"></textarea>
+      </div>
       <div class="btn-row" style="margin-top:1.5rem">
         <button class="btn btn-green" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="einsatzVorOrtAbschliessen()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -383,7 +384,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.40</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.41</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -434,11 +435,13 @@ async function ladeEinsaetze(){
 
 let ADRESSEN={};
 let FRAGEN={};
+let FRAGEN_ALLGEMEIN=[];
 let ST={};
 let selectedGebiet="";
 let QPOOL=[],QIDX=0;
 
 function ra(a){return a[Math.floor(Math.random()*a.length)];}
+function cleanNr(nr){return String(nr||"").replace(/\.\d+$/,"").trim();}
 function rn(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");}
 function today(){return new Date().toISOString().split("T")[0];}
@@ -526,13 +529,27 @@ async function ladeFragen(){
       const rows=(json.table.rows||[]).slice(1);
       result[fzg]=rows.map(row=>{
         const c=row.c||[];
-        const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
-        const map={A:0,B:1,C:2,D:3};
+        const val=i=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";        const map={A:0,B:1,C:2,D:3};
         const typ=val(0).toLowerCase();
         return{typ:typ||"frage",f:val(1),a:[val(2),val(3),val(4),val(5)],r:map[val(6).toUpperCase()]??0,e:val(7)};
       }).filter(q=>q.f);
     }catch(e){result[fzg]=[];}
   }));
+  // Allgemeine Fragen laden
+  try{
+    const urlAllg=`https://docs.google.com/spreadsheets/d/${FRAGEN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=Allgemeine%20Fragen`;
+    const resAllg=await fetchMitTimeout(urlAllg);
+    const textAllg=await resAllg.text();
+    const jsonAllg=JSON.parse(textAllg.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rowsAllg=(jsonAllg.table.rows||[]).slice(1);
+    FRAGEN_ALLGEMEIN=rowsAllg.map(row=>{
+      const c=row.c||[];
+      const val=i=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
+      const map={A:0,B:1,C:2,D:3};
+      const typ=val(0).toLowerCase();
+      return{typ:typ||"frage",f:val(1),a:[val(2),val(3),val(4),val(5)],r:map[val(6).toUpperCase()]??0,e:val(7)};
+    }).filter(q=>q.f);
+  }catch(e){FRAGEN_ALLGEMEIN=[];console.warn("Allgemeine Fragen:",e);}
   FRAGEN=result;
   try{localStorage.setItem(FRAGEN_CACHE_KEY,JSON.stringify({ts:Date.now(),data:result}));}catch(e){}
 }
@@ -634,14 +651,13 @@ function zeigeEinsatz(){
   const pool=passend.length>0?passend:EINSAETZE;
   const ens=ra(pool);
 
-  ST.einsatzAddr=`${ad.str} ${ad.nr}, ${ad.plz} ${ad.ort}`;
+  ST.einsatzAddr=`${ad.str} ${cleanNr(ad.nr)}, ${ad.plz} ${ad.ort}`;
   ST.einsatzZeit=Date.now();
   ST.einsatzAddrObj=ad;
   ST.einsatzCount=(ST.einsatzCount||0)+1;
   if(!ST.einsatzAddrListe) ST.einsatzAddrListe=[];
   ST.einsatzAddrListe.push(ST.einsatzAddr);
-  // Feststellungen-Block ausgeblendet (Daten kommen aus Auswertungs-Sheet)
-  document.getElementById("e-feststellungen-block").style.display="none";
+
   document.getElementById("e-stichwort").textContent=ens.stichwort;
 
   // Alarmierung Badge
@@ -653,7 +669,7 @@ function zeigeEinsatz(){
     almBadge.style.display="none";
   }
 
-  document.getElementById("e-addr").textContent=`${ad.str} ${ad.nr}`;
+  document.getElementById("e-addr").textContent=`${ad.str} ${cleanNr(ad.nr)}`;
   document.getElementById("e-city").textContent=`${ad.plz} ${ad.ort}`;
   document.getElementById("e-meldung").textContent=ens.meldung;
   // Einsatzmittel: gewähltes Fahrzeug immer zuerst
@@ -661,7 +677,7 @@ function zeigeEinsatz(){
   const hatFzg=mittelRaw.toLowerCase().includes(fzg.toLowerCase());
   document.getElementById("e-mittel").textContent=hatFzg?mittelRaw:`${fzg}, ${mittelRaw}`;
 
-  const q=encodeURIComponent(`${ad.str} ${ad.nr}, ${ad.plz} ${ad.ort}, Schweiz`);
+  const q=encodeURIComponent(`${ad.str} ${cleanNr(ad.nr)}, ${ad.plz} ${ad.ort}, Schweiz`);
   const url=`https://www.google.com/maps/search/?api=1&query=${q}`;
   document.getElementById("e-mapslink").href=url;
   drawQR(document.getElementById("e-qr"),url,100);
@@ -706,11 +722,23 @@ function einsatzOrtErreicht(){
     </div>`;
   }
   // Zufahrt vorausfüllen falls vorhanden
-  document.getElementById("vor-ort-zufahrt").value=(ad&&ad.anmerkung)||"";
+  zufahrtAuswahl="";
+  document.getElementById("zufahrt-ja").classList.remove("selected");
+  document.getElementById("zufahrt-nein").classList.remove("selected");
+  document.getElementById("zufahrt-text-wrap").style.display="none";
+  document.getElementById("vor-ort-zufahrt").value="";
   show("s-einsatz-vor-ort");
 }
 
 let vorOrtAuswahl="";
+let zufahrtAuswahl="";
+function selectZufahrt(val){
+  zufahrtAuswahl=val;
+  document.getElementById("zufahrt-ja").classList.toggle("selected",val==="ja");
+  document.getElementById("zufahrt-nein").classList.toggle("selected",val==="nein");
+  document.getElementById("zufahrt-text-wrap").style.display=val==="ja"?"block":"none";
+  if(val==="nein") document.getElementById("vor-ort-zufahrt").value="";
+}
 function selectVorOrt(val){
   vorOrtAuswahl=val;
   document.getElementById("vof-ja").classList.toggle("selected",val==="Ja");
@@ -725,13 +753,13 @@ async function einsatzVorOrtAbschliessen(){
   } else {
     antwort=vorOrtAuswahl;
   }
-  const zufahrt=document.getElementById("vor-ort-zufahrt").value.trim();
+  const zufahrt=zufahrtAuswahl==="ja"?document.getElementById("vor-ort-zufahrt").value.trim():"";
   // Rückmeldung ins Auswertungs-Sheet speichern
   const ad=ST.einsatzAddrObj;
   if(ad){
     const payload={type:"rueckmeldung",
       datum:ST.datum,fahrer:ST.fahrer,fahrzeug:ST.fahrzeug,
-      gemeinde:ad.ort,strasse:ad.str,nr:ad.nr,plz:ad.plz,ort:ad.ort,
+      gemeinde:ad.ort,strasse:ad.str,nr:cleanNr(ad.nr),plz:ad.plz,ort:ad.ort,
       frageId:fq?fq.id:"",antwort:antwort||"",zufahrt:zufahrt||""
     };
     try{await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});}
@@ -764,9 +792,14 @@ function starteAbfrage(){
     zeigeAbschluss();
     return;
   }
-  // 3 zufällige Tätigkeiten + 6 zufällige Fragen
+  // 3 zufällige Tätigkeiten + 7 Fragen (min1 max3 allgemein + rest Fahrzeug)
   const taetigkeiten=[...pool.filter(q=>q.typ==="tätigkeit"||q.typ==="taetigkeit")].sort(()=>Math.random()-0.5).slice(0,3);
-  const fragen=[...pool.filter(q=>q.typ!=="tätigkeit"&&q.typ!=="taetigkeit")].sort(()=>Math.random()-0.5).slice(0,6);
+  const fahrzeugFragen=[...pool.filter(q=>q.typ!=="tätigkeit"&&q.typ!=="taetigkeit")].sort(()=>Math.random()-0.5);
+  const allgFragen=[...FRAGEN_ALLGEMEIN.filter(q=>q.typ!=="tätigkeit"&&q.typ!=="taetigkeit")].sort(()=>Math.random()-0.5);
+  const anzahlAllg=Math.min(3,Math.max(1,allgFragen.length));
+  const gewaehltAllg=allgFragen.slice(0,anzahlAllg);
+  const gewaehltFzg=fahrzeugFragen.slice(0,7-gewaehltAllg.length);
+  const fragen=[...gewaehltAllg,...gewaehltFzg];
   QPOOL=[...taetigkeiten,...fragen].sort(()=>Math.random()-0.5);
   QIDX=0;ST.quizResults=[];ST.taetigkeitResults=[];
   zeigeFrageUI();show("s-abfrage");
@@ -890,15 +923,15 @@ function zeigeAbschluss(){
   const taetList=ST.taetigkeitResults||[];
   if(taetList.length>0){
     tr.style.display="block";
-    const stufeLabel=["","Ohne weiteres","Nachgeschaut / Hilfe","Nicht gelöst"];
+    const stufeLabel=["","Sehr gut","Bitte weiter Üben","Nehmen wir auf"];
     const stufeBadge=["","badge-green","badge-orange","badge-red"];
+    const stufeStyle=["","background:var(--green);color:#fff","background:#E67E00;color:#fff","background:var(--red);color:#fff"];
     document.getElementById("ac-taetigkeit-detail").innerHTML=taetList.map((t,i)=>`
       <div class="sum-row">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
           <div style="color:var(--text2)">T${i+1}: ${t.frage}</div>
-          <span class="badge ${stufeBadge[t.stufe]||"badge-blue"}">Stufe ${t.stufe}</span>
+          <span class="badge" style="${stufeStyle[t.stufe]};padding:3px 10px;">${stufeLabel[t.stufe]}</span>
         </div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">${stufeLabel[t.stufe]}</div>
         ${t.stufe===3&&t.hilfe?`<div style="font-size:12px;color:var(--red-dark);margin-top:3px;font-style:italic">Hilfe: ${t.hilfe}</div>`:""}
       </div>`).join("");
   }else{tr.style.display="none";}
@@ -930,7 +963,9 @@ async function abschliessen(){
   const pct=total>0?Math.round(richtig/total*100):0;
   const gl=ST.gebiet==="stuetzpunkt"?"Stützpunktgebiet":"Ortsfeuerwehrgebiet";
   const statusEl=document.getElementById("save-status");
-  statusEl.style.display="block";statusEl.className="save-status";statusEl.textContent="Wird gespeichert…";
+  statusEl.style.display="none";statusEl.className="save-status";statusEl.textContent="";
+  // Erst jetzt anzeigen
+  statusEl.style.display="block";statusEl.textContent="Wird gespeichert…";
   try{
     const hilfeText=(ST.taetigkeitResults||[]).filter(t=>t.stufe===3&&t.hilfe).map(t=>`${t.frage}: ${t.hilfe}`).join("\n");
     await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},

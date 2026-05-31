@@ -147,10 +147,16 @@ select.filter{height:32px;padding:0 8px;border:1px solid var(--gray-mid);backgro
       </div>
     </div>
 
+    <!-- Letzte Zufahrts-Rückmeldungen -->
+    <div class="card" id="zufahrt-card" style="display:none">
+      <h2>Letzte Zufahrts-Rückmeldungen</h2>
+      <div id="zufahrt-list"></div>
+    </div>
+
   </div>
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.40</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.41</div>
 
 <script>
 const SHEET_ID = "1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
@@ -204,7 +210,36 @@ function render() {
   populateFahrzeugFilter();
   renderFragen();
   renderHilfe();
+  renderZufahrt();
   renderPieCharts();
+}
+
+function renderZufahrt() {
+  // Letzte 3 Zufahrts-Rückmeldungen aus Reiter "Rückmeldungen"
+  const RUECK_SHEET_ID = "1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
+  const card = document.getElementById("zufahrt-card");
+  const el = document.getElementById("zufahrt-list");
+  fetch(`https://docs.google.com/spreadsheets/d/${RUECK_SHEET_ID}/gviz/tq?tqx=out:json&sheet=R%C3%BCckmeldungen`)
+    .then(r=>r.text())
+    .then(text=>{
+      const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+      const rows=(json.table.rows||[]).slice(1);
+      const val=(c,i)=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
+      // Spalten: A=Datum,B=Fahrer,C=Fahrzeug,D=Gemeinde,E=Strasse,F=Nr,G=PLZ,H=Ort,I=Hydrant,J=Schlüsselrohr,K=PV,L=Anmerkung
+      const mitZufahrt=rows.map(row=>{
+        const c=row.c||[];
+        return{datum:val(c,0),fahrer:val(c,1),fahrzeug:val(c,2),
+               strasse:val(c,4),nr:val(c,5),plz:val(c,6),ort:val(c,7),anmerkung:val(c,11)};
+      }).filter(e=>e.anmerkung).slice(-3).reverse();
+      if(mitZufahrt.length===0){card.style.display="none";return;}
+      card.style.display="block";
+      el.innerHTML=mitZufahrt.map(e=>`
+        <div class="frage-row" style="align-items:flex-start;flex-direction:column;gap:3px;padding:10px 0;">
+          <div style="font-weight:700;font-size:13px;">${e.strasse} ${e.nr}, ${e.plz} ${e.ort}</div>
+          <div style="font-size:13px;color:var(--text2);">${e.anmerkung}</div>
+          <div style="font-size:11px;color:var(--text3);">${e.datum?e.datum+" · ":""}${e.fahrzeug?e.fahrzeug+" · ":""}${e.fahrer||""}</div>
+        </div>`).join("");
+    }).catch(e=>console.warn("Zufahrt:",e));
 }
 
 function renderPieCharts() {
@@ -497,7 +532,7 @@ function renderFragen() {
   });
 
   const list = Object.values(fragenMap)
-    .filter(x => x.total >= minAnt)
+    .filter(x => x.total >= minAnt && x.falsch > 0)
     .sort((a,b) => (b.falsch/b.total) - (a.falsch/a.total));
 
   // Max 15 wenn kein Fahrzeug-Filter aktiv
