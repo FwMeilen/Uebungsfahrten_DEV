@@ -384,7 +384,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.43</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.45</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -397,7 +397,7 @@ const STUETZPUNKT_FAHRZEUGE=["PIF","ULF","OC","SVF","PTF 2/3"];
 let selectedKat="";
 const ADDR_CACHE_KEY="fw_adressen_v9";
 const ADDR_TTL=24*60*60*1000; // 1 Tag
-const FRAGEN_CACHE_KEY="fw_fragen_v2";
+const FRAGEN_CACHE_KEY="fw_fragen_v3";
 const FRAGEN_TTL=2*60*60*1000; // 2 Stunden
 
 const GEMEINDEN_ORTS=["meilen","feldmeilen","herrliberg"];
@@ -802,6 +802,7 @@ function starteAbfrage(){
   const fragen=[...gewaehltAllg,...gewaehltFzg];
   QPOOL=[...taetigkeiten,...fragen].sort(()=>Math.random()-0.5);
   QIDX=0;ST.quizResults=[];ST.taetigkeitResults=[];
+  if(QPOOL.length===0){zeigeAbschluss();return;}
   zeigeFrageUI();show("s-abfrage");
 }
 
@@ -809,12 +810,12 @@ function zeigeFrageUI(){
   const q=QPOOL[QIDX],total=QPOOL.length;
   document.getElementById("q-progress").style.width=`${(QIDX/total)*100}%`;
   document.getElementById("q-nr").textContent=`${QIDX+1} von ${total}`;
-  document.getElementById("q-text").textContent=isTaetigkeit?"":q.f;
   document.getElementById("q-erklaerung").style.display="none";
   document.getElementById("q-next-row").style.display="none";
   document.getElementById("q-hilfe-box").style.display="none";
   document.getElementById("q-hilfe-text").value="";
   const isTaetigkeit=(q.typ==="tätigkeit"||q.typ==="taetigkeit");
+  document.getElementById("q-text").textContent=isTaetigkeit?"":q.f;
   // Typ-Badge
   const badge=document.getElementById("q-typ-badge");
   badge.innerHTML=isTaetigkeit
