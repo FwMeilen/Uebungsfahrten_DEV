@@ -384,7 +384,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.41</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.43</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -398,7 +398,7 @@ let selectedKat="";
 const ADDR_CACHE_KEY="fw_adressen_v9";
 const ADDR_TTL=24*60*60*1000; // 1 Tag
 const FRAGEN_CACHE_KEY="fw_fragen_v2";
-const FRAGEN_TTL=7*24*60*60*1000;
+const FRAGEN_TTL=2*60*60*1000; // 2 Stunden
 
 const GEMEINDEN_ORTS=["meilen","feldmeilen","herrliberg"];
 const GEMEINDEN_STUETZ=["meilen","feldmeilen","herrliberg","uetikon","oetwil","maennedorf","staefa","hombrechtikon"];
@@ -758,7 +758,7 @@ async function einsatzVorOrtAbschliessen(){
   const ad=ST.einsatzAddrObj;
   if(ad){
     const payload={type:"rueckmeldung",
-      datum:ST.datum,fahrer:ST.fahrer,fahrzeug:ST.fahrzeug,
+      datum:ST.datum,fahrer:`${ST.fahrer}/${ST.beifahrer}`,fahrzeug:ST.fahrzeug,
       gemeinde:ad.ort,strasse:ad.str,nr:cleanNr(ad.nr),plz:ad.plz,ort:ad.ort,
       frageId:fq?fq.id:"",antwort:antwort||"",zufahrt:zufahrt||""
     };
@@ -809,7 +809,7 @@ function zeigeFrageUI(){
   const q=QPOOL[QIDX],total=QPOOL.length;
   document.getElementById("q-progress").style.width=`${(QIDX/total)*100}%`;
   document.getElementById("q-nr").textContent=`${QIDX+1} von ${total}`;
-  document.getElementById("q-text").textContent=q.f;
+  document.getElementById("q-text").textContent=isTaetigkeit?"":q.f;
   document.getElementById("q-erklaerung").style.display="none";
   document.getElementById("q-next-row").style.display="none";
   document.getElementById("q-hilfe-box").style.display="none";
@@ -821,30 +821,24 @@ function zeigeFrageUI(){
     ?`<span class="typ-badge typ-badge-taetigkeit">Tätigkeit</span>`
     :`<span class="typ-badge typ-badge-frage">Frage</span>`;
   if(isTaetigkeit){
-    // Zusatzinfos aus Antwort_A–F (a[0]–a[5])
-    const zusatzItems=q.a.filter(x=>x&&x.trim());
-    const zusatzHtml=zusatzItems.length>0
-      ?`<div style="margin-bottom:1.25rem;padding:0.75rem;background:var(--bg2);border-left:3px solid var(--gray-mid);">`
-        +zusatzItems.map(x=>`<div style="font-size:13px;color:var(--text2);line-height:1.8;">${x}</div>`).join("")
-        +`</div>`
-      :"";
-    // Schritt 1: nur Tätigkeit anzeigen + Button "Abgeschlossen"
-    document.getElementById("q-antworten").innerHTML=zusatzHtml+`
+    // Schritt 1: Tätigkeit prominent + Button "Abgeschlossen"
+    document.getElementById("q-antworten").innerHTML=`
+      <div style="background:var(--bg2);border-left:4px solid var(--gray);padding:1rem 1.25rem;margin:1.25rem 0 1.5rem;font-size:16px;font-weight:700;color:var(--black);line-height:1.5;">${q.f}</div>
       <div style="margin-bottom:1rem">
-        <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="taetigkeitAbgeschlossen()">
+        <button class="btn btn-green" style="width:100%;justify-content:center;height:52px;font-size:14px;" onclick="taetigkeitAbgeschlossen()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           Abgeschlossen
         </button>
       </div>
       <div id="taetigkeit-stufen" style="display:none">
         <div class="divider" style="margin:0.75rem 0"></div>
-        <div id="taetigkeit-erklaerung-box" style="background:var(--bg2);padding:0.75rem;margin-bottom:0.75rem;font-size:13px;color:var(--text2);line-height:1.6;display:none"></div>
+        <div id="taetigkeit-kontrollpunkte" style="margin-bottom:0.75rem;"></div>
         <button class="stufe-btn" id="stufe-1" onclick="bewerteStudfe(1)">1 &nbsp;·&nbsp; Konnte ich ohne weiteres umsetzen</button>
         <button class="stufe-btn" id="stufe-2" onclick="bewerteStudfe(2)">2 &nbsp;·&nbsp; Musste ich nachschauen / brauchte Hilfe</button>
         <button class="stufe-btn" id="stufe-3" onclick="bewerteStudfe(3)">3 &nbsp;·&nbsp; Konnten wir zusammen nicht</button>
       </div>`;
   } else {
-    const shuffled=q.a.map((t,i)=>({t,i})).sort(()=>Math.random()-0.5);
+    const shuffled=q.a.map((t,i)=>({t,i})).filter(x=>x.t&&x.t.trim()).sort(()=>Math.random()-0.5);
     document.getElementById("q-antworten").innerHTML=shuffled.map(x=>
       `<button class="antwort-btn" data-idx="${x.i}" onclick="antworten(${x.i})">${x.t}</button>`
     ).join("");
@@ -852,17 +846,20 @@ function zeigeFrageUI(){
 }
 
 function taetigkeitAbgeschlossen(){
-  // Schritt 2: Kontrollpunkte + Stufen einblenden, Button deaktivieren
   const q=QPOOL[QIDX];
   const stufen=document.getElementById("taetigkeit-stufen");
   if(stufen) stufen.style.display="block";
   // Abgeschlossen-Button deaktivieren
-  const abgBtn=document.querySelector("#q-antworten .btn-primary");
+  const abgBtn=document.querySelector("#q-antworten .btn-green");
   if(abgBtn){abgBtn.disabled=true;abgBtn.style.opacity="0.5";}
-  // Erklärung/Kontrollpunkte einblenden
-  if(q.e){
-    const erkBox=document.getElementById("taetigkeit-erklaerung-box");
-    if(erkBox){erkBox.textContent=q.e;erkBox.style.display="block";}
+  // Kontrollpunkte einzeln auflisten (aus q.a, nur nicht-leere)
+  const kpBox=document.getElementById("taetigkeit-kontrollpunkte");
+  if(kpBox){
+    const kpItems=q.a.filter(x=>x&&x.trim());
+    if(kpItems.length>0){
+      kpBox.innerHTML=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray);margin-bottom:6px;">Habt ihr überprüft:</div>`
+        +kpItems.map((x,i)=>`<div style="padding:8px 12px;margin-bottom:6px;background:var(--bg2);border-left:3px solid var(--gray-mid);font-size:13px;color:var(--text2);">Kontrollpunkt ${i+1}: ${x}</div>`).join("");
+    }
   }
 }
 
@@ -906,6 +903,9 @@ function naechsteFrage(){
 
 /* ── Abschluss ── */
 function zeigeAbschluss(){
+  // Save-Status zurücksetzen
+  const ss=document.getElementById("save-status");
+  if(ss){ss.style.display="none";ss.textContent="";}
   // Hilfe-Text des letzten Eintrags sichern (falls direkt von naechsteFrage aufgerufen)
   if(ST.taetigkeitResults&&ST.taetigkeitResults.length>0){
     const last=ST.taetigkeitResults[ST.taetigkeitResults.length-1];
