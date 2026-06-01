@@ -68,10 +68,10 @@ select.filter{height:34px;padding:0 8px;border:1px solid var(--gray-mid);backgro
   </div>
 
   <div class="filter-row">
-    <select class="filter" id="filter-gemeinde" onchange="renderListe()">
+    <select class="filter" id="filter-gemeinde" onchange="updateStrassenFilter();renderListe()">
       <option value="">Alle Gemeinden</option>
     </select>
-    <select class="filter" id="filter-strasse" onchange="renderListe()">
+    <select class="filter" id="filter-strasse" onchange="updateNummernFilter();renderListe()">
       <option value="">Alle Strassen</option>
     </select>
     <select class="filter" id="filter-nr" onchange="renderListe()">
@@ -87,7 +87,7 @@ select.filter{height:34px;padding:0 8px;border:1px solid var(--gray-mid);backgro
   <div id="content"></div>
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.45</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.46</div>
 
 <script>
 const AUSWERTUNG_SHEET_ID="1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
@@ -106,12 +106,13 @@ async function loadData(){
     const val=(c,i)=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
 
     // Spalten: A=Datum,B=Fahrer,C=Fahrzeug,D=Gemeinde,E=Strasse,F=Nr,G=PLZ,H=Ort,I=Hydrant,J=Schlüsselrohr,K=PV,L=Anmerkung Anfahrt
+    const cleanNr=nr=>String(nr||"").replace(/\.\d+$/,"").trim();
     ALLE_EINTRAEGE=rows.map(row=>{
       const c=row.c||[];
       return{datum:val(c,0),fahrer:val(c,1),fahrzeug:val(c,2),
-             gemeinde:val(c,3),strasse:val(c,4),nr:val(c,5),plz:val(c,6),ort:val(c,7),
+             gemeinde:val(c,3),strasse:val(c,4),nr:cleanNr(val(c,5)),plz:val(c,6),ort:val(c,7),
              hydrant:val(c,8),schluessel:val(c,9),pv:val(c,10),anmerkung:val(c,11)};
-    }).filter(e=>e.anmerkung||e.hydrant||e.schluessel||e.pv);
+    }).filter(e=>e.anmerkung);
 
     populateFilters();
     renderListe();
@@ -124,15 +125,33 @@ async function loadData(){
 
 function populateFilters(){
   const gemeinden=[...new Set(ALLE_EINTRAEGE.map(e=>e.gemeinde).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de"));
-  const strassen=[...new Set(ALLE_EINTRAEGE.map(e=>e.strasse).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de"));
-  const nummern=[...new Set(ALLE_EINTRAEGE.map(e=>e.nr).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de",{numeric:true}));
-
   const fg=document.getElementById("filter-gemeinde");
   fg.innerHTML='<option value="">Alle Gemeinden</option>'+gemeinden.map(g=>`<option>${g}</option>`).join("");
+  updateStrassenFilter();
+}
+
+function updateStrassenFilter(){
+  const fG=document.getElementById("filter-gemeinde").value;
+  const basis=fG?ALLE_EINTRAEGE.filter(e=>e.gemeinde===fG):ALLE_EINTRAEGE;
+  const strassen=[...new Set(basis.map(e=>e.strasse).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de"));
   const fs=document.getElementById("filter-strasse");
+  const prevS=fs.value;
   fs.innerHTML='<option value="">Alle Strassen</option>'+strassen.map(s=>`<option>${s}</option>`).join("");
+  if(strassen.includes(prevS)) fs.value=prevS;
+  updateNummernFilter();
+}
+
+function updateNummernFilter(){
+  const fG=document.getElementById("filter-gemeinde").value;
+  const fS=document.getElementById("filter-strasse").value;
+  let basis=ALLE_EINTRAEGE;
+  if(fG) basis=basis.filter(e=>e.gemeinde===fG);
+  if(fS) basis=basis.filter(e=>e.strasse===fS);
+  const nummern=[...new Set(basis.map(e=>e.nr).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de",{numeric:true}));
   const fn=document.getElementById("filter-nr");
+  const prevN=fn.value;
   fn.innerHTML='<option value="">Alle Nummern</option>'+nummern.map(n=>`<option>${n}</option>`).join("");
+  if(nummern.includes(prevN)) fn.value=prevN;
 }
 
 function renderListe(){
@@ -177,12 +196,11 @@ function renderListe(){
     html+=`<div class="gemeinde-block"><div class="gemeinde-titel">${gemeinde}</div>`;
     liste.forEach(e=>{
       const badges=[];
-      if(e.pv) badges.push(`<span class="badge ${e.pv==="Ja"?"badge-green":"badge-gray"}">PV: ${e.pv}</span>`);
-      if(e.schluessel) badges.push(`<span class="badge ${e.schluessel==="Ja"?"badge-green":"badge-gray"}">Schlüsselrohr: ${e.schluessel}</span>`);
-      if(e.hydrant) badges.push(`<span class="badge badge-gray">Hydrant: ${e.hydrant}</span>`);
+      if(e.pv==="Ja") badges.push(`<span class="badge badge-green">PV: Ja</span>`);
+      if(e.schluessel==="Ja") badges.push(`<span class="badge badge-green">Schlüsselrohr: Ja</span>`);
       html+=`<div class="entry-card">
         <div class="entry-addr">${e.strasse} ${e.nr}, ${e.plz} ${e.ort}</div>
-        ${e.pv?`<div class="entry-badges"><span class="badge ${e.pv==="Ja"?"badge-green":"badge-gray"}">PV: ${e.pv}</span></div>`:""}
+        ${badges.length>0?`<div class="entry-badges">${badges.join("")}</div>`:""}
         ${e.anmerkung?`<div class="entry-anmerkung">${e.anmerkung}</div>`:""}
         <div class="entry-meta">${e.datum?e.datum+" · ":""}${e.fahrzeug?e.fahrzeug+" · ":""}${e.fahrer||""}</div>
       </div>`;
