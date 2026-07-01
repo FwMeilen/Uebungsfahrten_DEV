@@ -1023,12 +1023,16 @@ function fahrerWechsel(){
   document.getElementById("f-aufbau").value="abfrage";
   selectFahrtMode("einsatz");
   selectAufbauMode("abfrage");
-  // Kategorie + Fahrzeug vorausfüllen
+  // Kategorie + Fahrzeug + Gebiet vorausfüllen
   if(fzg){
     const kat=FAHRZEUGE_C.includes(fzg)?"C":"B";
     selectKat(kat);
     const fzgEl=document.getElementById("f-fahrzeug");
     if(fzgEl){fzgEl.value=fzg;fzgEl.dispatchEvent(new Event("change"));}
+  }
+  // Gebiet merken
+  if(ST.gebiet){
+    selectGebiet(ST.gebiet);
   }
   show("s-form1");
   window.scrollTo(0,0);
