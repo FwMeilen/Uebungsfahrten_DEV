@@ -780,7 +780,9 @@ function zeigeEinsatz(){
 }
 
 function fahrtBeenden(){
-  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeFahrtFertig();
+  if(ST.aufbau==="abfrage") starteAbfrage();
+  else if(ST.aufbau==="ueben") show("s-ueben");
+  else zeigeFahrtFertig();
 }
 
 function einsatzOrtErreicht(){
