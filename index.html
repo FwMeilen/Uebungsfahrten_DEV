@@ -295,6 +295,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- FREIES AUFBAUTRAINING -->
+  <div class="screen" id="s-ueben">
+    <div class="disclaimer">
+      <div class="disclaimer-title">Aufbautraining</div>
+      <div class="disclaimer-sub">Freies Üben</div>
+    </div>
+    <div class="card" style="text-align:center;padding:2rem 1.25rem">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--black)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      <p style="font-size:15px;line-height:1.7;color:var(--text2);margin-bottom:1.5rem">Schaut den Aufbau und Inhalt genau an und nehmt Gerätschaften in Betrieb.</p>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="zeigeFahrtFertig()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Aufbautraining beenden
+      </button>
+    </div>
+  </div>
+
   <!-- GUTE FAHRT (Freies Fahren) -->
   <div class="screen" id="s-gute-fahrt">
     <div class="card" style="text-align:center;padding:2rem 1.25rem">
@@ -357,12 +373,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="choice-card" onclick="fahrerWechsel()">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           <div class="choice-label">Fahrerwechsel</div>
-          <div class="choice-sub">Neuer Fahrer, gleiches Fahrzeug</div>
+
         </div>
         <div class="choice-card" onclick="zeigeRetablieren()">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          <div class="choice-label">Trainingsfahrt beenden</div>
-          <div class="choice-sub">Fahrzeug retablieren</div>
+          <div class="choice-label">Trainingsfahrt beenden und retablieren</div>
         </div>
       </div>
     </div>
@@ -674,6 +689,7 @@ function weiter(){
     show("s-gute-fahrt");
   } else if(fahrt==="einsatz") zeigeEinsatz();
   else if(aufbau==="abfrage") starteAbfrage();
+  else if(aufbau==="ueben") show("s-ueben");
   else zeigeFahrtFertig();
 }
 
@@ -962,8 +978,9 @@ function fahrerWechsel(){
   document.getElementById("rc-stuetzpunkt").classList.remove("selected");
   document.getElementById("rc-orts").classList.remove("selected");
   document.getElementById("gebiet-wrap").style.display="none";
-  document.getElementById("f-fahrer").value="";
-  document.getElementById("f-beifahrer").value="";
+  // Fahrer/Beifahrer tauschen
+  document.getElementById("f-fahrer").value=ST.beifahrer||"";
+  document.getElementById("f-beifahrer").value=ST.fahrer||"";
   document.getElementById("f-datum").value=today();
   document.getElementById("f-abfahrt").value=nowTime();
   document.getElementById("f-fahrt").value="einsatz";
