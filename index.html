@@ -159,9 +159,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- FORM 1 -->
   <div class="screen active" id="s-form1">
-    <div class="card">
-      <h2>Fahrt erfassen</h2>
-      <p class="sub">Angaben vor der Abfahrt ausfüllen</p>
+
+    <!-- Block 1: Fahrer Infos -->
+    <div class="card" style="margin-bottom:0.75rem">
+      <h2>1 · Fahrer &amp; Datum</h2>
       <div class="grid2">
         <div><label>Fahrer (Kürzel)</label><input type="text" id="f-fahrer" maxlength="3" style="text-transform:uppercase"></div>
         <div><label>Beifahrer (Kürzel)</label><input type="text" id="f-beifahrer" maxlength="3" style="text-transform:uppercase"></div>
@@ -170,6 +171,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div><label>Datum</label><input type="date" id="f-datum"></div>
         <div><label>Abfahrtszeit</label><input type="time" id="f-abfahrt"></div>
       </div>
+    </div>
+
+    <!-- Block 2: Fahrzeugwahl -->
+    <div class="card" style="margin-bottom:0.75rem">
+      <h2>2 · Fahrzeugwahl</h2>
       <label>Fahrzeugkategorie</label>
       <div class="radio-group" id="kat-group">
         <div class="radio-card" id="rc-kat-b" onclick="selectKat('B')">
@@ -200,22 +206,40 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Block 3: Trainingsmodus -->
+    <div class="card">
+      <h2>3 · Trainingsmodus</h2>
       <label>Fahrt</label>
-      <select id="f-fahrt">
-        <option value="">– wählen –</option>
-        <option value="frei">Freies Fahren</option>
-        <option value="einsatz" selected>Einsatzmeldung</option>
-      </select>
+      <div class="radio-group" style="margin-bottom:1rem">
+        <div class="radio-card" id="rc-fahrt-einsatz" onclick="selectFahrtMode('einsatz')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          Einsatzmeldung
+        </div>
+        <div class="radio-card" id="rc-fahrt-frei" onclick="selectFahrtMode('frei')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Freies Fahren
+        </div>
+      </div>
       <label>Aufbau</label>
-      <select id="f-aufbau">
-        <option value="">– wählen –</option>
-        <option value="ueben">Freies Üben</option>
-        <option value="abfrage" selected>Abfrage</option>
-      </select>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="weiter()">
+      <div class="radio-group">
+        <div class="radio-card" id="rc-aufbau-abfrage" onclick="selectAufbauMode('abfrage')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Abfrage
+        </div>
+        <div class="radio-card" id="rc-aufbau-ueben" onclick="selectAufbauMode('ueben')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          Freies Üben
+        </div>
+      </div>
+      <!-- Hidden selects für Kompatibilität -->
+      <select id="f-fahrt" style="display:none"><option value="einsatz" selected>einsatz</option><option value="frei">frei</option></select>
+      <select id="f-aufbau" style="display:none"><option value="abfrage" selected>abfrage</option><option value="ueben">ueben</option></select>
+      <div class="btn-row" style="margin-top:1.25rem">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="weiter()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          Weiter
+          Fahrt starten
         </button>
       </div>
       <p class="err-msg" id="form1-err">Bitte alle Felder ausfüllen.</p>
@@ -637,6 +661,16 @@ async function init(){
 }
 
 /* ── Form 1 ── */
+function selectFahrtMode(val){
+  document.getElementById("rc-fahrt-einsatz").classList.toggle("selected",val==="einsatz");
+  document.getElementById("rc-fahrt-frei").classList.toggle("selected",val==="frei");
+  document.getElementById("f-fahrt").value=val;
+}
+function selectAufbauMode(val){
+  document.getElementById("rc-aufbau-abfrage").classList.toggle("selected",val==="abfrage");
+  document.getElementById("rc-aufbau-ueben").classList.toggle("selected",val==="ueben");
+  document.getElementById("f-aufbau").value=val;
+}
 function selectKat(kat){
   selectedKat=kat;
   document.getElementById("rc-kat-b").classList.toggle("selected",kat==="B");
@@ -985,6 +1019,8 @@ function fahrerWechsel(){
   document.getElementById("f-abfahrt").value=nowTime();
   document.getElementById("f-fahrt").value="einsatz";
   document.getElementById("f-aufbau").value="abfrage";
+  selectFahrtMode("einsatz");
+  selectAufbauMode("abfrage");
   // Kategorie + Fahrzeug vorausfüllen
   if(fzg){
     const kat=FAHRZEUGE_C.includes(fzg)?"C":"B";
@@ -1192,6 +1228,8 @@ function hideOverlay(){
   document.getElementById("init-overlay").style.display="none";
   document.getElementById("f-datum").value=today();
   document.getElementById("f-abfahrt").value=nowTime();
+  selectFahrtMode("einsatz");
+  selectAufbauMode("abfrage");
 }
 
 function showLoadPopup(fehler){
