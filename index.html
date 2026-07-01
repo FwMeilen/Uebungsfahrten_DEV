@@ -123,6 +123,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .stufe-btn.selected-3{background:var(--red-light);border-color:var(--red);color:var(--red-dark);}
 .hilfe-box{margin-top:0.75rem;display:none;}
 .hilfe-box label{color:var(--red-dark);}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--gray-mid);margin-bottom:6px;cursor:pointer;transition:background 0.15s;}
+.check-item:active{background:var(--bg2);}
+.check-item.done{background:var(--green-light);border-color:var(--green);}
+.check-item.done .check-box{background:var(--green);border-color:var(--green);}
+.check-item.done .check-box::after{content:"✓";color:#fff;font-size:13px;font-weight:700;}
+.check-box{width:24px;height:24px;border:2px solid var(--gray-mid);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.check-label{font-size:13px;line-height:1.5;color:var(--text);}
+.check-item.done .check-label{color:var(--green);text-decoration:line-through;}
+.check-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray);margin:16px 0 6px;}
+.check-alles{width:100%;padding:14px;background:var(--black);color:#fff;border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.05em;}
+.check-alles:hover{background:#333;}
+.check-weiter{width:100%;padding:14px;background:var(--green);color:#fff;border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:1rem;text-transform:uppercase;letter-spacing:0.05em;}
+.check-weiter:hover{background:var(--green-dark,#1e4d15);}
 .hilfe-box textarea{width:100%;min-height:80px;padding:8px 10px;border:1px solid var(--gray-mid);font-size:13px;font-family:inherit;resize:vertical;border-radius:0;}
 .hilfe-box textarea:focus{outline:none;border-color:var(--red);}</style>
 </head>
@@ -336,6 +349,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- RETABLIEREN -->
+  <div class="screen" id="s-retablieren">
+    <div class="card">
+      <h2>Fahrzeug Retablieren</h2>
+      <p class="sub" style="margin-bottom:1rem">Bitte alle Punkte abarbeiten bevor die Fahrt abgeschlossen wird.</p>
+      <button class="check-alles" onclick="alleErledigt()">✓ &nbsp; Alles gemacht</button>
+      <div id="check-liste"></div>
+      <button class="check-weiter" onclick="zeigeAbschluss()">
+        Weiter zu Fahrt abschliessen →
+      </button>
+    </div>
+  </div>
+
   <!-- ABSCHLUSS -->
   <div class="screen" id="s-abschluss">
     <div class="card">
@@ -384,7 +410,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; v0.45</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.46</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -629,7 +655,7 @@ function weiter(){
     show("s-gute-fahrt");
   } else if(fahrt==="einsatz") zeigeEinsatz();
   else if(aufbau==="abfrage") starteAbfrage();
-  else zeigeAbschluss();
+  else zeigeRetablieren();
 }
 
 /* ── Einsatz ── */
@@ -685,7 +711,7 @@ function zeigeEinsatz(){
 }
 
 function fahrtBeenden(){
-  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeAbschluss();
+  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeRetablieren();
 }
 
 function einsatzOrtErreicht(){
@@ -773,7 +799,7 @@ function nochEinEinsatz(){
 }
 
 function weiterNachEinsatz(){
-  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeAbschluss();
+  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeRetablieren();
 }
 
 /* ── Abfrage ── */
@@ -802,7 +828,7 @@ function starteAbfrage(){
   const fragen=[...gewaehltAllg,...gewaehltFzg];
   QPOOL=[...taetigkeiten,...fragen].sort(()=>Math.random()-0.5);
   QIDX=0;ST.quizResults=[];ST.taetigkeitResults=[];
-  if(QPOOL.length===0){zeigeAbschluss();return;}
+  if(QPOOL.length===0){zeigeRetablieren();return;}
   zeigeFrageUI();show("s-abfrage");
 }
 
@@ -899,7 +925,64 @@ function naechsteFrage(){
     }
   }
   QIDX++;
-  if(QIDX>=QPOOL.length) zeigeAbschluss(); else zeigeFrageUI();
+  if(QIDX>=QPOOL.length) zeigeRetablieren(); else zeigeFrageUI();
+}
+
+/* ── Retablieren ── */
+const RETABLIER_PUNKTE=[
+  {section:"Tanken / Fahrtenbuch"},
+  {text:"Tanken wenn <75% / ¾ voll"},
+  {text:"Aggregate, Lüfter, Multicut, Motorsägen – Tank muss voll sein"},
+  {text:"Eintrag ins Fahrtenbuch (Datum, Fahrstrecke, Kürzel, getankte Liter)"},
+  {text:"Check Stand Harnstoff (AddBlue) – wenn unter 40%: Rep.-Zettel"},
+  {section:"Reinigung"},
+  {text:"Radkästen, Pneu und Aufbau reinigen"},
+  {text:"Gerätschaften reinigen"},
+  {text:"Fahrzeugkabine reinigen (PET, Verpackungen entsorgen)"},
+  {text:"Fahrzeugkabinenboden reinigen (Bäseli und Schwamm)"},
+  {section:"Kontrollen"},
+  {text:"Fahrzeug an externe Strom- und Luftversorgung anschliessen"},
+  {text:"Alles Material vollständig und einsatzbereit"},
+  {text:"Handfunkgeräte Kanal 3, richtig in Ladestation, Ladeanzeige leuchtet"},
+  {text:"Handlampen im Ladegerät, Ladeanzeige leuchtet"},
+  {text:"4-Stoff Messgerät in Ladestation (Altair 4x)"},
+  {text:"Visuelle Kontrolle aussen auf Schäden – ggf. Rep.-Zettel"},
+  {text:"0.5L Mineralwasserflaschen auffüllen"},
+  {text:"Mineralwasser Nahrungsergänzungsmittel auffüllen / Ablaufdatum prüfen"},
+  {section:"Material"},
+  {text:"Alle gebrauchten Schläuche ersetzen"},
+  {text:"Nasses/feuchtes Material hinter Fahrzeug zum Trocknen deponieren"},
+  {text:"Nasse/feuchte Triopan ersetzen und zum Trocknen aufstellen"},
+  {text:"Defektes Material ersetzen resp. mit Rep.-Zettel versehen"},
+  {text:"Kettensäge und Multicut retablieren + Rep.-Zettel"},
+  {section:"Fahrzeugtüren und Rollladen"},
+  {text:"Türen und Rollläden schliessen (Ausnahme: nasse Innenräume/Material)"}
+];
+
+function zeigeRetablieren(){
+  const liste=document.getElementById("check-liste");
+  liste.innerHTML=RETABLIER_PUNKTE.map((p,i)=>{
+    if(p.section) return `<div class="check-section">${p.section}</div>`;
+    return `<div class="check-item" id="chk-${i}" onclick="toggleCheck(${i})">
+      <div class="check-box"></div>
+      <div class="check-label">${p.text}</div>
+    </div>`;
+  }).join("");
+  show("s-retablieren");
+}
+
+function toggleCheck(i){
+  const el=document.getElementById("chk-"+i);
+  if(el) el.classList.toggle("done");
+}
+
+function alleErledigt(){
+  RETABLIER_PUNKTE.forEach((p,i)=>{
+    if(p.text){
+      const el=document.getElementById("chk-"+i);
+      if(el) el.classList.add("done");
+    }
+  });
 }
 
 /* ── Abschluss ── */
