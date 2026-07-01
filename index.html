@@ -953,21 +953,25 @@ function zeigeFahrtFertig(){
 }
 
 function fahrerWechsel(){
-  // Fahrzeug merken, Felder zurücksetzen
   const fzg=ST.fahrzeug;
-  // Felder auf Startscreen vorausfüllen
-  const fzgEl=document.getElementById("f-fahrzeug");
-  if(fzgEl&&fzg){fzgEl.value=fzg;fzgEl.dispatchEvent(new Event("change"));}
+  // Reset wie neustart
+  selectedGebiet="";selectedKat="";selectedFahrt=null;selectedAufbau=null;
+  document.getElementById("rc-kat-b").classList.remove("selected");
+  document.getElementById("rc-kat-c").classList.remove("selected");
+  document.getElementById("fahrzeug-wrap").style.display="none";
+  document.getElementById("rc-stuetzpunkt").classList.remove("selected");
+  document.getElementById("rc-orts").classList.remove("selected");
+  document.getElementById("gebiet-wrap").style.display="none";
   document.getElementById("f-fahrer").value="";
   document.getElementById("f-beifahrer").value="";
   document.getElementById("f-datum").value=today();
   document.getElementById("f-abfahrt").value=nowTime();
-  // Kategorie + Gebiet zurücksetzen
-  selectedKat=null;selectedFahrt=null;selectedAufbau=null;selectedGebiet="orts";
-  document.querySelectorAll(".choice-card").forEach(c=>c.classList.remove("selected"));
-  document.querySelectorAll(".radio-card").forEach(c=>c.classList.remove("selected"));
-  document.getElementById("gebiet-wrap").style.display="none";
-  show("s-start");
+  document.getElementById("f-fahrt").value="einsatz";
+  document.getElementById("f-aufbau").value="abfrage";
+  // Fahrzeug vorausfüllen
+  const fzgEl=document.getElementById("f-fahrzeug");
+  if(fzgEl&&fzg){fzgEl.value=fzg;fzgEl.dispatchEvent(new Event("change"));}
+  show("s-form1");
   window.scrollTo(0,0);
 }
 
