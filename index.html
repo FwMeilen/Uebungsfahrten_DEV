@@ -349,6 +349,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- FAHRT FERTIG -->
+  <div class="screen" id="s-fahrt-fertig">
+    <div class="card">
+      <h2>Wie weiter?</h2>
+      <div class="choice-grid" style="margin-top:1rem">
+        <div class="choice-card" onclick="fahrerWechsel()">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <div class="choice-label">Fahrerwechsel</div>
+          <div class="choice-sub">Neuer Fahrer, gleiches Fahrzeug</div>
+        </div>
+        <div class="choice-card" onclick="zeigeRetablieren()">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <div class="choice-label">Trainingsfahrt beenden</div>
+          <div class="choice-sub">Fahrzeug retablieren</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- RETABLIEREN -->
   <div class="screen" id="s-retablieren">
     <div class="card">
@@ -410,7 +429,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.46</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.47-dev</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -655,7 +674,7 @@ function weiter(){
     show("s-gute-fahrt");
   } else if(fahrt==="einsatz") zeigeEinsatz();
   else if(aufbau==="abfrage") starteAbfrage();
-  else zeigeRetablieren();
+  else zeigeFahrtFertig();
 }
 
 /* ── Einsatz ── */
@@ -711,7 +730,7 @@ function zeigeEinsatz(){
 }
 
 function fahrtBeenden(){
-  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeRetablieren();
+  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeFahrtFertig();
 }
 
 function einsatzOrtErreicht(){
@@ -799,7 +818,7 @@ function nochEinEinsatz(){
 }
 
 function weiterNachEinsatz(){
-  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeRetablieren();
+  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeFahrtFertig();
 }
 
 /* ── Abfrage ── */
@@ -828,7 +847,7 @@ function starteAbfrage(){
   const fragen=[...gewaehltAllg,...gewaehltFzg];
   QPOOL=[...taetigkeiten,...fragen].sort(()=>Math.random()-0.5);
   QIDX=0;ST.quizResults=[];ST.taetigkeitResults=[];
-  if(QPOOL.length===0){zeigeRetablieren();return;}
+  if(QPOOL.length===0){zeigeFahrtFertig();return;}
   zeigeFrageUI();show("s-abfrage");
 }
 
@@ -925,7 +944,31 @@ function naechsteFrage(){
     }
   }
   QIDX++;
-  if(QIDX>=QPOOL.length) zeigeRetablieren(); else zeigeFrageUI();
+  if(QIDX>=QPOOL.length) zeigeFahrtFertig(); else zeigeFrageUI();
+}
+
+/* ── Fahrt Fertig ── */
+function zeigeFahrtFertig(){
+  show("s-fahrt-fertig");
+}
+
+function fahrerWechsel(){
+  // Fahrzeug merken, Felder zurücksetzen
+  const fzg=ST.fahrzeug;
+  // Felder auf Startscreen vorausfüllen
+  const fzgEl=document.getElementById("f-fahrzeug");
+  if(fzgEl&&fzg){fzgEl.value=fzg;fzgEl.dispatchEvent(new Event("change"));}
+  document.getElementById("f-fahrer").value="";
+  document.getElementById("f-beifahrer").value="";
+  document.getElementById("f-datum").value=today();
+  document.getElementById("f-abfahrt").value=nowTime();
+  // Kategorie + Gebiet zurücksetzen
+  selectedKat=null;selectedFahrt=null;selectedAufbau=null;selectedGebiet="orts";
+  document.querySelectorAll(".choice-card").forEach(c=>c.classList.remove("selected"));
+  document.querySelectorAll(".radio-card").forEach(c=>c.classList.remove("selected"));
+  document.getElementById("gebiet-wrap").style.display="none";
+  show("s-start");
+  window.scrollTo(0,0);
 }
 
 /* ── Retablieren ── */
