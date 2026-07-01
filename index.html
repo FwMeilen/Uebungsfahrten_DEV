@@ -968,9 +968,13 @@ function fahrerWechsel(){
   document.getElementById("f-abfahrt").value=nowTime();
   document.getElementById("f-fahrt").value="einsatz";
   document.getElementById("f-aufbau").value="abfrage";
-  // Fahrzeug vorausfüllen
-  const fzgEl=document.getElementById("f-fahrzeug");
-  if(fzgEl&&fzg){fzgEl.value=fzg;fzgEl.dispatchEvent(new Event("change"));}
+  // Kategorie + Fahrzeug vorausfüllen
+  if(fzg){
+    const kat=FAHRZEUGE_C.includes(fzg)?"C":"B";
+    selectKat(kat);
+    const fzgEl=document.getElementById("f-fahrzeug");
+    if(fzgEl){fzgEl.value=fzg;fzgEl.dispatchEvent(new Event("change"));}
+  }
   show("s-form1");
   window.scrollTo(0,0);
 }
