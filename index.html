@@ -488,7 +488,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.51-dev</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.00</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -1162,7 +1162,7 @@ function zeigeAbschluss(){
   const fragenFalschCount=(ST.quizResults||[]).filter(x=>!x.richtig).length;
   const aufgabenNichtGruenCount=(ST.taetigkeitResults||[]).filter(t=>t.stufe!==1).length;
   document.getElementById("ac-chips").innerHTML=
-    `<span class="chip">${ST.fahrer} / ${ST.beifahrer}</span><span class="chip">${ST.fahrzeug}</span><span class="chip">${gl}</span><span class="chip">${ST.datum}</span><span class="chip">Abfahrt ${ST.abfahrt}</span>${ST.einsatzCount>0?`<span class="chip">${ST.einsatzCount}× Einsatz</span>`:""}${(ST.quizResults||[]).length>0?`<span class="chip">${fragenFalschCount}× Frage falsch</span>`:""}${(ST.taetigkeitResults||[]).length>0?`<span class="chip">${aufgabenNichtGruenCount}× Aufgabe nicht grün</span>`:""}`;
+    `<span class="chip">${ST.fahrer} / ${ST.beifahrer}</span><span class="chip">${ST.fahrzeug}</span><span class="chip">${gl}</span><span class="chip">${ST.datum}</span><span class="chip">Abfahrt ${ST.abfahrt}</span>${ST.einsatzCount>0?`<span class="chip">${ST.einsatzCount}× Einsatz</span>`:""}${(ST.quizResults||[]).length>0?`<span class="chip">${fragenFalschCount}× Fragen falsch</span>`:""}${(ST.taetigkeitResults||[]).length>0?`<span class="chip">${aufgabenNichtGruenCount}× Aufgaben zu repetieren</span>`:""}`;
   // Tätigkeit-Auswertung
   const tr=document.getElementById("ac-taetigkeit-result");
   const taetList=ST.taetigkeitResults||[];
