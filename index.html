@@ -311,7 +311,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="divider"></div>
       <!-- Zufahrt -->
-      <h3>Zufahrt zur Liegenschaft</h3>
+      <div class="label-row"><h3 style="margin:0">Zufahrt zur Liegenschaft</h3><span class="info-icon" onclick="zeigeInfo('zufahrt')">i</span></div>
       <p class="sub" style="margin-bottom:0.5rem">Gibt es wichtige Informationen zur Zufahrt für die Feuerwehr?</p>
       <div class="radio-group" style="margin-bottom:0.75rem;">
         <div class="radio-card" id="zufahrt-ja" onclick="selectZufahrt('ja')">Ja</div>
@@ -326,6 +326,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           Einsatz abschliessen
         </button>
       </div>
+      <div id="vor-ort-save-status" class="save-status"></div>
     </div>
   </div>
 
@@ -337,7 +338,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="card" style="text-align:center;padding:2rem 1.25rem">
       <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--black)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-      <p style="font-size:15px;line-height:1.7;color:var(--text2);margin-bottom:1.5rem">Schaut den Aufbau und Inhalt genau an und nehmt Gerätschaften in Betrieb.</p>
+      <p style="font-size:15px;line-height:1.7;color:var(--text2);margin-bottom:1.5rem">Schaut den Aufbau und Inhalt genau an und nehmt Gerätschaften in Betrieb. Freies Üben nach Euren Bedürfnissen.</p>
       <button class="btn btn-primary" style="width:100%;justify-content:center;height:48px;font-size:14px;" onclick="zeigeFahrtFertig()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         Fahrzeugwissen beenden
@@ -352,6 +353,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <h2>Gute Fahrt!</h2>
       <p class="sub" style="margin-top:0.5rem" id="gf-info"></p>
       <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-top:0.75rem">Freie Fahrt nach Euren Bedürfnissen. Bitte fahrt vorsichtig und inkludiert schmale Strassen, Rückwärtsfahren mit Begleitperson und kleine Manöver.</p>
+      <div style="background:var(--bg2);border-left:4px solid var(--black);padding:0.75rem 1rem;margin-top:1rem;display:inline-block;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray);margin-bottom:2px;">Fahrdauer</div>
+        <div id="gf-timer" style="font-size:22px;font-weight:700;">00:00</div>
+      </div>
       <div class="btn-row" style="justify-content:center;margin-top:1.5rem" id="gf-btn-row"></div>
     </div>
   </div>
@@ -368,7 +373,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="choice-grid">
         <div class="choice-card" onclick="nochEinEinsatz()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-          Noch ein Einsatz
+          Nochmals einen neuen Einsatz anzeigen
         </div>
         <div class="choice-card" onclick="weiterNachEinsatz()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><polyline points="9 18 15 12 9 6"/></svg>
@@ -406,19 +411,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="card">
       <h2>Wie weiter?</h2>
       <p class="sub" style="margin-bottom:0.5rem">Wählt aus, wie es weitergeht.</p>
-      <div class="choice-grid" style="margin-top:1rem">
-        <div class="choice-card" id="choice-mehr-wissen" style="display:none" onclick="mehrFahrzeugwissen()">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          <div class="choice-label">Mehr Fahrzeugwissen</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:1rem">
+        <div class="choice-card" id="choice-mehr-wissen" style="display:none;padding:0.65rem;" onclick="mehrFahrzeugwissen()">
+          <div class="choice-label" style="font-size:12px;">Mehr Fahrzeugwissen</div>
           <div style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;margin-top:2px;color:var(--text3)">(=nochmals 10 Fragen)</div>
         </div>
-        <div class="choice-card" onclick="fahrerWechsel()">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          <div class="choice-label">Fahrerwechsel</div>
+        <div class="choice-card" style="padding:0.65rem;" onclick="fahrerWechsel()">
+          <div class="choice-label" style="font-size:12px;">Fahrerwechsel</div>
         </div>
-        <div class="choice-card" onclick="zeigeRetablieren()">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          <div class="choice-label">Trainingsfahrt beenden und retablieren</div>
+        <div class="choice-card" style="padding:0.65rem;" onclick="zeigeRetablieren()">
+          <div class="choice-label" style="font-size:12px;">Trainingsfahrt beenden und retablieren</div>
         </div>
       </div>
     </div>
@@ -442,7 +444,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="card">
       <span class="badge badge-green">Fahrtraining abgeschlossen</span>
       <h2 style="margin-top:0.5rem">Abschluss</h2>
-      <p class="sub" style="margin-bottom:0.5rem">Kontrolliert die Angaben und tragt die Rückkehrzeit ein.</p>
       <div style="margin:0.75rem 0" id="ac-chips"></div>
       <div class="divider"></div>
       <div style="background:var(--bg2);border:2px solid var(--black);padding:1rem;margin-bottom:0.5rem;">
@@ -487,7 +488,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.50-dev</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.51-dev</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -724,14 +725,14 @@ function weiter(){
   if(!fa||!bf||!dat||!abf||!fzg||!fahrt||!aufbau||!selectedKat||(needsGebiet&&!selectedGebiet)){err.style.display="block";return;}
   err.style.display="none";
   ST={fahrer:fa,beifahrer:bf,datum:dat,abfahrt:abf,fahrzeug:fzg,fahrt,aufbau,
-      gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0,einsatzZeit:null,einsatzAddrObj:null,vonAbfrage:false};
+      gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0,einsatzZeit:null,einsatzAddrObj:null,vonAbfrage:false,fahrzeitBestaetigt:false};
   if(fahrt==="frei"){
     document.getElementById("gf-info").textContent=`${fzg} · ${fa} / ${bf}`;
     const btnRow=document.getElementById("gf-btn-row");
     if(aufbau==="abfrage"){
       btnRow.innerHTML=`<button class="btn btn-primary" onclick="fahrtBeenden()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        Weiter zu Fahrzeugwissen
+        Freies Fahren abschliessen und weiter zu Fahrzeugwissen
       </button>`;
     } else {
       btnRow.innerHTML=`<button class="btn btn-red" onclick="fahrtBeenden()">
@@ -739,6 +740,7 @@ function weiter(){
         Fahrtraining beenden
       </button>`;
     }
+    startFahrdauerTimer();
     show("s-gute-fahrt");
   } else if(fahrt==="einsatz") zeigeEinsatz();
   else if(aufbau==="abfrage") starteAbfrage();
@@ -797,7 +799,25 @@ function zeigeEinsatz(){
   show("s-einsatz");
 }
 
+let fahrdauerInterval=null;
+function startFahrdauerTimer(){
+  ST.freieFahrtStart=Date.now();
+  if(fahrdauerInterval) clearInterval(fahrdauerInterval);
+  const update=()=>{
+    const sec=Math.floor((Date.now()-ST.freieFahrtStart)/1000);
+    const m=String(Math.floor(sec/60)).padStart(2,"0"),s=String(sec%60).padStart(2,"0");
+    const el=document.getElementById("gf-timer");
+    if(el) el.textContent=`${m}:${s}`;
+  };
+  update();
+  fahrdauerInterval=setInterval(update,1000);
+}
+function stopFahrdauerTimer(){
+  if(fahrdauerInterval){clearInterval(fahrdauerInterval);fahrdauerInterval=null;}
+}
+
 function fahrtBeenden(){
+  stopFahrdauerTimer();
   if(ST.aufbau==="abfrage") starteAbfrage();
   else if(ST.aufbau==="ueben"){ST.vonAbfrage=false;show("s-ueben");}
   else zeigeFahrtFertig();
@@ -869,6 +889,8 @@ async function einsatzVorOrtAbschliessen(){
     antwort=vorOrtAuswahl;
   }
   const zufahrt=zufahrtAuswahl==="ja"?document.getElementById("vor-ort-zufahrt").value.trim():"";
+  const statusEl=document.getElementById("vor-ort-save-status");
+  if(statusEl){statusEl.style.display="block";statusEl.className="save-status";statusEl.textContent="Wird gespeichert…";}
   // Rückmeldung ins Auswertungs-Sheet speichern
   const ad=ST.einsatzAddrObj;
   if(ad){
@@ -880,6 +902,7 @@ async function einsatzVorOrtAbschliessen(){
     try{await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});}
     catch(e){console.warn("Rückmeldung Fehler:",e);}
   }
+  if(statusEl){statusEl.style.display="none";statusEl.textContent="";}
   show("s-nach-einsatz");
 }
 
@@ -1136,8 +1159,10 @@ function zeigeAbschluss(){
   }
   document.getElementById("ac-rueckkehr").value=nowTime();
   const gl=ST.gebiet==="stuetzpunkt"?"Stützpunktgebiet":"Ortsfeuerwehrgebiet";
+  const fragenFalschCount=(ST.quizResults||[]).filter(x=>!x.richtig).length;
+  const aufgabenNichtGruenCount=(ST.taetigkeitResults||[]).filter(t=>t.stufe!==1).length;
   document.getElementById("ac-chips").innerHTML=
-    `<span class="chip">${ST.fahrer} / ${ST.beifahrer}</span><span class="chip">${ST.fahrzeug}</span><span class="chip">${gl}</span><span class="chip">${ST.datum}</span><span class="chip">Abfahrt ${ST.abfahrt}</span>${ST.einsatzCount>0?`<span class="chip">${ST.einsatzCount}× Einsatz</span>`:""}`;
+    `<span class="chip">${ST.fahrer} / ${ST.beifahrer}</span><span class="chip">${ST.fahrzeug}</span><span class="chip">${gl}</span><span class="chip">${ST.datum}</span><span class="chip">Abfahrt ${ST.abfahrt}</span>${ST.einsatzCount>0?`<span class="chip">${ST.einsatzCount}× Einsatz</span>`:""}${(ST.quizResults||[]).length>0?`<span class="chip">${fragenFalschCount}× Frage falsch</span>`:""}${(ST.taetigkeitResults||[]).length>0?`<span class="chip">${aufgabenNichtGruenCount}× Aufgabe nicht grün</span>`:""}`;
   // Tätigkeit-Auswertung
   const tr=document.getElementById("ac-taetigkeit-result");
   const taetList=ST.taetigkeitResults||[];
@@ -1176,8 +1201,36 @@ function zeigeAbschluss(){
   show("s-abschluss");
 }
 
+function timeDiffMinuten(a,b){
+  const toMin=s=>{if(!s)return null;const p=s.split(":");const h=parseInt(p[0]),m=parseInt(p[1]);if(isNaN(h)||isNaN(m))return null;return h*60+m;};
+  const ma=toMin(a),mb=toMin(b);
+  if(ma===null||mb===null) return 0;
+  return mb>=ma?mb-ma:(mb+1440)-ma;
+}
+
 async function abschliessen(){
   const rk=document.getElementById("ac-rueckkehr").value;
+  const mins=timeDiffMinuten(ST.abfahrt,rk);
+  if(mins>300&&!ST.fahrzeitBestaetigt){
+    const h=Math.floor(mins/60),m=mins%60;
+    document.getElementById("fahrzeit-warn-text").textContent=`Die erfasste Fahrzeit beträgt ${h}h ${m}min (Abfahrt ${ST.abfahrt} – Rückkehr ${rk}). Ist das korrekt?`;
+    document.getElementById("fahrzeit-warn-bg").style.display="flex";
+    return;
+  }
+  await abschliessenSpeichern(rk);
+}
+
+function fahrzeitAnpassen(){
+  document.getElementById("fahrzeit-warn-bg").style.display="none";
+}
+
+function fahrzeitBestaetigen(){
+  ST.fahrzeitBestaetigt=true;
+  document.getElementById("fahrzeit-warn-bg").style.display="none";
+  abschliessen();
+}
+
+async function abschliessenSpeichern(rk){
   const richtig=ST.quizResults.filter(x=>x.richtig).length;
   const total=ST.quizResults.length;
   const pct=total>0?Math.round(richtig/total*100):0;
@@ -1241,7 +1294,8 @@ function neustart(){
 
 const INFO_TEXTE={
   fahrtraining:{titel:"Fahrtraining",text:"\u201eEinsatzmeldung\u201c simuliert eine echte Alarmierung mit Anfahrt zu einer zufälligen Adresse. Dient dem Üben einer unbekannten Anfahrt durch den Beifahrer und stärkt die Ortskenntnis.\n\nBei \u201eFreies Fahren\u201c könnt Ihr frei nach Euren Bedürfnissen fahren."},
-  fahrzeugwissen:{titel:"Fahrzeugwissen",text:"Abfrage stellt Euch 3 Tätigkeiten und 7 Fragen rund um Fahrzeug und Ausrüstung. Freies Üben lässt Euch den Aufbau ohne Abfrage in Ruhe kennenlernen."}
+  fahrzeugwissen:{titel:"Fahrzeugwissen",text:"\u201eAbfrage\u201c stellt 10 Fragen und Tätigkeiten rund um das Fahrzeug und die Ausrüstung. Hier könnt Ihr Euer Wissen festigen!\n\nBei \u201eFreies Üben\u201c könnt Ihr das Fahrzeug und den Aufbau ohne Fragen selbst üben."},
+  zufahrt:{titel:"Zufahrt zur Liegenschaft",text:"Falls Ihr wichtige Informationen zur Zufahrt für die Feuerwehr habt, meldet dies bitte hier.\nBsp: Zufahrt nur durch Tor mit Zahlenschloss / Baustelle verhindert Zufahrt über Mauerstrasse"}
 };
 function zeigeInfo(key){
   const info=INFO_TEXTE[key];
@@ -1287,6 +1341,17 @@ document.addEventListener("DOMContentLoaded",()=>{
     <button class="info-modal-close" onclick="schliesseInfo()">✕</button>
     <h3 id="info-modal-title"></h3>
     <p id="info-modal-text"></p>
+  </div>
+</div>
+
+<div class="info-modal-bg" id="fahrzeit-warn-bg">
+  <div class="info-modal">
+    <h3>Lange Fahrzeit erkannt</h3>
+    <p id="fahrzeit-warn-text"></p>
+    <div style="display:flex;gap:8px;margin-top:1rem;">
+      <button class="btn" style="flex:1;justify-content:center;" onclick="fahrzeitAnpassen()">Zeit anpassen</button>
+      <button class="btn btn-green" style="flex:1;justify-content:center;" onclick="fahrzeitBestaetigen()">Bestätigen</button>
+    </div>
   </div>
 </div>
 
