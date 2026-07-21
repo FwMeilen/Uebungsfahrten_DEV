@@ -75,7 +75,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .alarm-text{font-size:15px;font-weight:600;line-height:1.5;}
 .maps-link{font-size:13px;color:var(--red);display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-weight:700;}
 .maps-link:hover{text-decoration:underline;}
-.qr-wrap{background:white;padding:10px;display:inline-block;border:1px solid var(--gray-mid);}
 .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
 /* Weiter-Wahl nach Einsatz */
 .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1rem;}
@@ -113,6 +112,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .load-popup-list{color:#ccc;line-height:1.6;}
 .load-popup-close{position:absolute;top:8px;right:10px;background:none;border:none;color:#888;font-size:16px;cursor:pointer;line-height:1;}
 .load-popup-close:hover{color:#fff;}
+.info-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--gray-mid);color:var(--gray);font-size:11px;font-weight:700;cursor:pointer;vertical-align:middle;margin-left:6px;flex-shrink:0;}
+.info-icon:hover{background:var(--gray);color:#fff;}
+.info-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:none;align-items:center;justify-content:center;padding:1.25rem;}
+.info-modal{background:#fff;max-width:360px;width:100%;padding:1.25rem;position:relative;}
+.info-modal h3{font-size:14px;font-weight:700;margin-bottom:0.5rem;}
+.info-modal p{font-size:13px;color:var(--text2);line-height:1.6;}
+.info-modal-close{position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;color:var(--gray);cursor:pointer;line-height:1;}
+.label-row{display:flex;align-items:center;justify-content:space-between;}
 .typ-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 10px;margin-bottom:10px;border-radius:2px;}
 .typ-badge-frage{background:#E6F1FB;color:#0C447C;}
 .typ-badge-taetigkeit{background:#FFF3CD;color:#856404;}
@@ -214,7 +221,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="card">
       <h2>3. Fahrtraining</h2>
       <p class="sub" style="margin-bottom:0.75rem">Fahrtraining- und Fahrzeugwissen-Modus wählen.</p>
-      <label>Fahrtraining</label>
+      <div class="label-row"><label>Fahrtraining</label><span class="info-icon" onclick="zeigeInfo('fahrtraining')">i</span></div>
       <div class="radio-group" style="margin-bottom:1rem">
         <div class="radio-card" id="rc-fahrt-einsatz" onclick="selectFahrtMode('einsatz')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
@@ -225,7 +232,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           Freies Fahren
         </div>
       </div>
-      <label>Fahrzeugwissen</label>
+      <div class="label-row"><label>Fahrzeugwissen</label><span class="info-icon" onclick="zeigeInfo('fahrzeugwissen')">i</span></div>
       <div class="radio-group">
         <div class="radio-card" id="rc-aufbau-abfrage" onclick="selectAufbauMode('abfrage')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -271,10 +278,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="alarm-sub" id="e-city"></div>
           <a class="maps-link" id="e-mapslink" href="#" target="_blank">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            Google Maps öffnen
+            In Google Maps ansehen
           </a>
         </div>
-        <div class="qr-wrap"><canvas id="e-qr" width="100" height="100"></canvas></div>
       </div>
       <div class="alarm-meld"><div class="alarm-lbl">Meldung</div><div class="alarm-text" id="e-meldung"></div></div>
       <div class="alarm-meld"><div class="alarm-lbl">Einsatzmittel</div><div class="alarm-text" id="e-mittel"></div></div>
@@ -345,6 +351,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem;display:block"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
       <h2>Gute Fahrt!</h2>
       <p class="sub" style="margin-top:0.5rem" id="gf-info"></p>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-top:0.75rem">Freie Fahrt nach Euren Bedürfnissen. Bitte fahrt vorsichtig und inkludiert schmale Strassen, Rückwärtsfahren mit Begleitperson und kleine Manöver.</p>
       <div class="btn-row" style="justify-content:center;margin-top:1.5rem" id="gf-btn-row"></div>
     </div>
   </div>
@@ -400,10 +407,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <h2>Wie weiter?</h2>
       <p class="sub" style="margin-bottom:0.5rem">Wählt aus, wie es weitergeht.</p>
       <div class="choice-grid" style="margin-top:1rem">
+        <div class="choice-card" id="choice-mehr-wissen" style="display:none" onclick="mehrFahrzeugwissen()">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <div class="choice-label">Mehr Fahrzeugwissen</div>
+          <div style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;margin-top:2px;color:var(--text3)">(=nochmals 10 Fragen)</div>
+        </div>
         <div class="choice-card" onclick="fahrerWechsel()">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           <div class="choice-label">Fahrerwechsel</div>
-
         </div>
         <div class="choice-card" onclick="zeigeRetablieren()">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
@@ -476,7 +487,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.48-dev</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv0.49-dev</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -713,7 +724,7 @@ function weiter(){
   if(!fa||!bf||!dat||!abf||!fzg||!fahrt||!aufbau||!selectedKat||(needsGebiet&&!selectedGebiet)){err.style.display="block";return;}
   err.style.display="none";
   ST={fahrer:fa,beifahrer:bf,datum:dat,abfahrt:abf,fahrzeug:fzg,fahrt,aufbau,
-      gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0,einsatzZeit:null,einsatzAddrObj:null};
+      gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0,einsatzZeit:null,einsatzAddrObj:null,vonAbfrage:false};
   if(fahrt==="frei"){
     document.getElementById("gf-info").textContent=`${fzg} · ${fa} / ${bf}`;
     const btnRow=document.getElementById("gf-btn-row");
@@ -731,7 +742,7 @@ function weiter(){
     show("s-gute-fahrt");
   } else if(fahrt==="einsatz") zeigeEinsatz();
   else if(aufbau==="abfrage") starteAbfrage();
-  else if(aufbau==="ueben") show("s-ueben");
+  else if(aufbau==="ueben"){ST.vonAbfrage=false;show("s-ueben");}
   else zeigeFahrtFertig();
 }
 
@@ -783,13 +794,12 @@ function zeigeEinsatz(){
   const q=encodeURIComponent(`${ad.str} ${cleanNr(ad.nr)}, ${ad.plz} ${ad.ort}, Schweiz`);
   const url=`https://www.google.com/maps/search/?api=1&query=${q}`;
   document.getElementById("e-mapslink").href=url;
-  drawQR(document.getElementById("e-qr"),url,100);
   show("s-einsatz");
 }
 
 function fahrtBeenden(){
   if(ST.aufbau==="abfrage") starteAbfrage();
-  else if(ST.aufbau==="ueben") show("s-ueben");
+  else if(ST.aufbau==="ueben"){ST.vonAbfrage=false;show("s-ueben");}
   else zeigeFahrtFertig();
 }
 
@@ -878,7 +888,9 @@ function nochEinEinsatz(){
 }
 
 function weiterNachEinsatz(){
-  if(ST.aufbau==="abfrage") starteAbfrage(); else zeigeFahrtFertig();
+  if(ST.aufbau==="abfrage") starteAbfrage();
+  else if(ST.aufbau==="ueben"){ST.vonAbfrage=false;show("s-ueben");}
+  else zeigeFahrtFertig();
 }
 
 /* ── Abfrage ── */
@@ -907,7 +919,7 @@ function starteAbfrage(){
   const fragen=[...gewaehltAllg,...gewaehltFzg];
   QPOOL=[...taetigkeiten,...fragen].sort(()=>Math.random()-0.5);
   QIDX=0;ST.quizResults=[];ST.taetigkeitResults=[];
-  if(QPOOL.length===0){zeigeFahrtFertig();return;}
+  if(QPOOL.length===0){ST.vonAbfrage=true;zeigeFahrtFertig();return;}
   zeigeFrageUI();show("s-abfrage");
 }
 
@@ -1004,12 +1016,18 @@ function naechsteFrage(){
     }
   }
   QIDX++;
-  if(QIDX>=QPOOL.length) zeigeFahrtFertig(); else zeigeFrageUI();
+  if(QIDX>=QPOOL.length){ST.vonAbfrage=true;zeigeFahrtFertig();} else zeigeFrageUI();
 }
 
 /* ── Fahrt Fertig ── */
 function zeigeFahrtFertig(){
+  const extra=document.getElementById("choice-mehr-wissen");
+  if(extra) extra.style.display=ST.vonAbfrage?"block":"none";
   show("s-fahrt-fertig");
+}
+
+function mehrFahrzeugwissen(){
+  starteAbfrage();
 }
 
 function fahrerWechsel(){
@@ -1221,21 +1239,19 @@ function neustart(){
   show("s-form1");
 }
 
-function drawQR(canvas,text,size){
-  const ctx=canvas.getContext("2d");
-  ctx.fillStyle="white";ctx.fillRect(0,0,size,size);
-  const mod=25,cell=Math.floor((size-12)/mod),off=Math.floor((size-mod*cell)/2);
-  const m=Array.from({length:mod},()=>new Array(mod).fill(0));
-  [[0,0],[0,mod-7],[mod-7,0]].forEach(([rr,c])=>{
-    for(let i=0;i<7;i++)for(let j=0;j<7;j++){if(i===0||i===6||j===0||j===6||(i>=2&&i<=4&&j>=2&&j<=4))m[rr+i][c+j]=1;}
-  });
-  let seed=0;for(let i=0;i<text.length;i++)seed=(seed*31+text.charCodeAt(i))&0xffffffff;
-  const rng=()=>{seed=((seed*1664525)+1013904223)&0xffffffff;return(seed>>>0)/4294967296;};
-  const fixed=new Set();
-  for(let i=0;i<7;i++)for(let j=0;j<7;j++){fixed.add(`${i},${j}`);fixed.add(`${i},${mod-7+j}`);fixed.add(`${mod-7+i},${j}`);}
-  for(let rr=0;rr<mod;rr++)for(let c=0;c<mod;c++){if(!fixed.has(`${rr},${c}`))m[rr][c]=rng()>0.5?1:0;}
-  ctx.fillStyle="#111";
-  for(let rr=0;rr<mod;rr++)for(let c=0;c<mod;c++){if(m[rr][c])ctx.fillRect(off+c*cell,off+rr*cell,cell,cell);}
+const INFO_TEXTE={
+  fahrtraining:{titel:"Fahrtraining",text:"Einsatzmeldung simuliert eine echte Alarmierung mit Anfahrt zu einer zufälligen Adresse. Freies Fahren dient dem Üben von Fahrmanövern ohne Einsatzmeldung."},
+  fahrzeugwissen:{titel:"Fahrzeugwissen",text:"Abfrage stellt Euch 3 Tätigkeiten und 7 Fragen rund um Fahrzeug und Ausrüstung. Freies Üben lässt Euch den Aufbau ohne Abfrage in Ruhe kennenlernen."}
+};
+function zeigeInfo(key){
+  const info=INFO_TEXTE[key];
+  if(!info) return;
+  document.getElementById("info-modal-title").textContent=info.titel;
+  document.getElementById("info-modal-text").textContent=info.text;
+  document.getElementById("info-modal-bg").style.display="flex";
+}
+function schliesseInfo(){
+  document.getElementById("info-modal-bg").style.display="none";
 }
 
 function hideOverlay(){
@@ -1266,6 +1282,14 @@ document.addEventListener("DOMContentLoaded",()=>{
   init();
 });
 </script>
+<div class="info-modal-bg" id="info-modal-bg" onclick="if(event.target===this)schliesseInfo()">
+  <div class="info-modal">
+    <button class="info-modal-close" onclick="schliesseInfo()">✕</button>
+    <h3 id="info-modal-title"></h3>
+    <p id="info-modal-text"></p>
+  </div>
+</div>
+
 <div class="load-popup" id="load-popup">
   <button class="load-popup-close" onclick="document.getElementById('load-popup').style.display='none'">✕</button>
   <div class="load-popup-title">⚠ Nicht geladen</div>
