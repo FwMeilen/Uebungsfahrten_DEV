@@ -47,6 +47,14 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--black);}
 .entry-num{font-size:10px;color:var(--text3);font-weight:700;position:absolute;top:8px;right:10px;}
 .status-msg{font-size:12px;font-weight:600;margin-top:6px;display:none;}
 .status-ok{color:var(--green);}
+.entry-header{display:flex;align-items:center;gap:10px;cursor:pointer;padding:2px 0;}
+.entry-arrow{width:18px;height:18px;flex-shrink:0;transition:transform 0.15s;display:flex;align-items:center;justify-content:center;color:var(--gray);}
+.entry-card.open .entry-arrow{transform:rotate(90deg);}
+.entry-summary{font-size:13px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.entry-typ-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 6px;background:var(--bg2);color:var(--gray);border:1px solid var(--gray-mid);flex-shrink:0;}
+.entry-body{display:none;margin-top:0.75rem;}
+.entry-card.open .entry-body{display:block;}
+textarea.ans{min-height:64px;}
 .status-err{color:var(--red);}
 .loading{text-align:center;padding:2rem;color:var(--text3);font-size:13px;}
 .empty{text-align:center;padding:2rem;color:var(--text3);font-size:13px;}
@@ -91,8 +99,14 @@ select#admin-fahrzeug{max-width:260px;}
     <div id="panel-fragen">
       <div class="card">
         <h2>Fahrzeugfragen</h2>
-        <label>Fahrzeug / Liste</label>
-        <select id="admin-fahrzeug" onchange="ladeFragenAdmin()"></select>
+        <div class="entry-row2">
+          <div><label>Fahrzeug / Liste</label><select id="admin-fahrzeug" onchange="ladeFragenAdmin()"></select></div>
+          <div><label>Typ</label><select id="admin-typ-filter" onchange="renderFragenListe(LETZTE_FRAGEN)">
+            <option value="">Alle</option>
+            <option value="frage">Frage</option>
+            <option value="tätigkeit">Tätigkeit</option>
+          </select></div>
+        </div>
       </div>
       <div class="top-actions">
         <span id="fragen-count" style="font-size:12px;color:var(--text3)"></span>
@@ -103,6 +117,14 @@ select#admin-fahrzeug{max-width:260px;}
 
     <!-- EINSATZMELDUNGEN -->
     <div id="panel-meldungen" style="display:none">
+      <div class="card">
+        <h2>Einsatzmeldungen</h2>
+        <label>Sortieren nach</label>
+        <select id="admin-meldung-sort" onchange="renderMeldungenListe(LETZTE_MELDUNGEN)">
+          <option value="kategorie">Kategorie</option>
+          <option value="alarmierung">Alarmierung</option>
+        </select>
+      </div>
       <div class="top-actions">
         <span id="meldungen-count" style="font-size:12px;color:var(--text3)"></span>
         <button class="btn btn-green" onclick="neueMeldung()">+ Neue Einsatzmeldung</button>
@@ -113,7 +135,7 @@ select#admin-fahrzeug{max-width:260px;}
 
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.00</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.02</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -122,6 +144,13 @@ const FAHRZEUGE_C=["TLF","ADL","PIF","ULF","OC","SVF","MTF"];
 const FAHRZEUGE=[...FAHRZEUGE_B,...FAHRZEUGE_C,"Allgemeine Fragen"];
 
 let ADMIN_PW="";
+let LETZTE_FRAGEN=[];
+let LETZTE_MELDUNGEN=[];
+
+function toggleEntry(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.toggle("open");
+}
 
 async function callAdmin(payload){
   const res=await fetch(SHEETS_URL,{
@@ -175,7 +204,8 @@ async function ladeFragenAdmin(){
   try{
     const res=await callAdmin({type:"admin_list_fragen",password:ADMIN_PW,sheet});
     if(res.error){el.innerHTML='<div class="empty">Zugriff verweigert. Bitte neu anmelden.</div>';return;}
-    renderFragenListe(res.rows||[]);
+    LETZTE_FRAGEN=res.rows||[];
+    renderFragenListe(LETZTE_FRAGEN);
   }catch(e){
     el.innerHTML=`<div class="empty">Fehler beim Laden: ${e.message}</div>`;
   }
@@ -183,70 +213,93 @@ async function ladeFragenAdmin(){
 
 function renderFragenListe(rows){
   const el=document.getElementById("fragen-liste");
-  document.getElementById("fragen-count").textContent=`${rows.length} Eintrag${rows.length!==1?"e":""}`;
-  if(rows.length===0){el.innerHTML='<div class="empty">Noch keine Einträge.</div>';return;}
-  el.innerHTML=rows.map(r=>fragenCardHtml(r)).join("");
+  const filter=document.getElementById("admin-typ-filter").value;
+  let gefiltert=rows;
+  if(filter){
+    gefiltert=rows.filter(r=>{
+      const t=(r.typ||"frage").toLowerCase();
+      const istTaetigkeit=t==="tätigkeit"||t==="taetigkeit";
+      return filter==="tätigkeit"?istTaetigkeit:!istTaetigkeit;
+    });
+  }
+  document.getElementById("fragen-count").textContent=`${gefiltert.length} Eintrag${gefiltert.length!==1?"e":""}`;
+  if(gefiltert.length===0){el.innerHTML='<div class="empty">Noch keine Einträge.</div>';return;}
+  el.innerHTML=gefiltert.map(r=>fragenCardHtml(r)).join("");
 }
 
 function fragenCardHtml(r){
   const id=`f-${r.row}`;
   const typ=(r.typ||"frage").toLowerCase();
+  const istTaetigkeit=typ==="tätigkeit"||typ==="taetigkeit";
   return `<div class="entry-card" id="${id}">
     <div class="entry-num">Zeile ${r.row}</div>
-    <label>Typ</label>
-    <select id="${id}-typ">
-      <option value="Frage" ${typ!=="tätigkeit"&&typ!=="taetigkeit"?"selected":""}>Frage</option>
-      <option value="Tätigkeit" ${typ==="tätigkeit"||typ==="taetigkeit"?"selected":""}>Tätigkeit</option>
-    </select>
-    <label>Frage / Tätigkeit</label>
-    <textarea id="${id}-frage">${esc(r.frage)}</textarea>
-    <div class="entry-row2">
-      <div><label>Antwort / Kontrollpunkt 1</label><input type="text" id="${id}-a1" value="${escAttr(r.a1)}"></div>
-      <div><label>Antwort / Kontrollpunkt 2</label><input type="text" id="${id}-a2" value="${escAttr(r.a2)}"></div>
+    <div class="entry-header" onclick="toggleEntry('${id}')">
+      <span class="entry-arrow">▶</span>
+      <span class="entry-typ-tag">${istTaetigkeit?"Tätigkeit":"Frage"}</span>
+      <span class="entry-summary">${esc(r.frage)}</span>
     </div>
-    <div class="entry-row2">
-      <div><label>Antwort / Kontrollpunkt 3</label><input type="text" id="${id}-a3" value="${escAttr(r.a3)}"></div>
-      <div><label>Antwort / Kontrollpunkt 4</label><input type="text" id="${id}-a4" value="${escAttr(r.a4)}"></div>
+    <div class="entry-body">
+      <label>Typ</label>
+      <select id="${id}-typ">
+        <option value="Frage" ${!istTaetigkeit?"selected":""}>Frage</option>
+        <option value="Tätigkeit" ${istTaetigkeit?"selected":""}>Tätigkeit</option>
+      </select>
+      <label>Frage / Tätigkeit</label>
+      <textarea id="${id}-frage">${esc(r.frage)}</textarea>
+      <div class="entry-row2">
+        <div><label>Antwort / Kontrollpunkt 1</label><textarea class="ans" id="${id}-a1">${esc(r.a1)}</textarea></div>
+        <div><label>Antwort / Kontrollpunkt 2</label><textarea class="ans" id="${id}-a2">${esc(r.a2)}</textarea></div>
+      </div>
+      <div class="entry-row2">
+        <div><label>Antwort / Kontrollpunkt 3</label><textarea class="ans" id="${id}-a3">${esc(r.a3)}</textarea></div>
+        <div><label>Antwort / Kontrollpunkt 4</label><textarea class="ans" id="${id}-a4">${esc(r.a4)}</textarea></div>
+      </div>
+      <label>Richtig (A–D, nur bei Frage)</label>
+      <input type="text" id="${id}-richtig" value="${escAttr(r.richtig)}" maxlength="1" style="max-width:80px;text-transform:uppercase">
+      <label>Erklärung</label>
+      <textarea id="${id}-erklaerung">${esc(r.erklaerung)}</textarea>
+      <div class="entry-actions">
+        <button class="btn btn-red" onclick="loescheFrage(${r.row},'${id}')">Löschen</button>
+        <button class="btn btn-green" onclick="speichereFrage(${r.row},'${id}')">Speichern</button>
+      </div>
+      <div class="status-msg" id="${id}-status"></div>
     </div>
-    <label>Richtig (A–D, nur bei Frage)</label>
-    <input type="text" id="${id}-richtig" value="${escAttr(r.richtig)}" maxlength="1" style="max-width:80px;text-transform:uppercase">
-    <label>Erklärung</label>
-    <textarea id="${id}-erklaerung">${esc(r.erklaerung)}</textarea>
-    <div class="entry-actions">
-      <button class="btn btn-red" onclick="loescheFrage(${r.row},'${id}')">Löschen</button>
-      <button class="btn btn-green" onclick="speichereFrage(${r.row},'${id}')">Speichern</button>
-    </div>
-    <div class="status-msg" id="${id}-status"></div>
   </div>`;
 }
 
 function neueFrage(){
   const el=document.getElementById("fragen-liste");
   const tempId="f-new-"+Date.now();
-  const html=`<div class="entry-card new" id="${tempId}">
-    <label>Typ</label>
-    <select id="${tempId}-typ">
-      <option value="Frage" selected>Frage</option>
-      <option value="Tätigkeit">Tätigkeit</option>
-    </select>
-    <label>Frage / Tätigkeit</label>
-    <textarea id="${tempId}-frage"></textarea>
-    <div class="entry-row2">
-      <div><label>Antwort / Kontrollpunkt 1</label><input type="text" id="${tempId}-a1"></div>
-      <div><label>Antwort / Kontrollpunkt 2</label><input type="text" id="${tempId}-a2"></div>
+  const html=`<div class="entry-card new open" id="${tempId}">
+    <div class="entry-header" onclick="toggleEntry('${tempId}')">
+      <span class="entry-arrow">▶</span>
+      <span class="entry-summary">Neue Frage / Tätigkeit</span>
     </div>
-    <div class="entry-row2">
-      <div><label>Antwort / Kontrollpunkt 3</label><input type="text" id="${tempId}-a3"></div>
-      <div><label>Antwort / Kontrollpunkt 4</label><input type="text" id="${tempId}-a4"></div>
+    <div class="entry-body">
+      <label>Typ</label>
+      <select id="${tempId}-typ">
+        <option value="Frage" selected>Frage</option>
+        <option value="Tätigkeit">Tätigkeit</option>
+      </select>
+      <label>Frage / Tätigkeit</label>
+      <textarea id="${tempId}-frage"></textarea>
+      <div class="entry-row2">
+        <div><label>Antwort / Kontrollpunkt 1</label><textarea class="ans" id="${tempId}-a1"></textarea></div>
+        <div><label>Antwort / Kontrollpunkt 2</label><textarea class="ans" id="${tempId}-a2"></textarea></div>
+      </div>
+      <div class="entry-row2">
+        <div><label>Antwort / Kontrollpunkt 3</label><textarea class="ans" id="${tempId}-a3"></textarea></div>
+        <div><label>Antwort / Kontrollpunkt 4</label><textarea class="ans" id="${tempId}-a4"></textarea></div>
+      </div>
+      <label>Richtig (A–D, nur bei Frage)</label>
+      <input type="text" id="${tempId}-richtig" maxlength="1" style="max-width:80px;text-transform:uppercase">
+      <label>Erklärung</label>
+      <textarea id="${tempId}-erklaerung"></textarea>
+      <div class="entry-actions">
+        <button class="btn btn-green" onclick="speichereFrage(null,'${tempId}')">Anlegen</button>
+      </div>
+      <div class="status-msg" id="${tempId}-status"></div>
     </div>
-    <label>Richtig (A–D, nur bei Frage)</label>
-    <input type="text" id="${tempId}-richtig" maxlength="1" style="max-width:80px;text-transform:uppercase">
-    <label>Erklärung</label>
-    <textarea id="${tempId}-erklaerung"></textarea>
-    <div class="entry-actions">
-      <button class="btn btn-green" onclick="speichereFrage(null,'${tempId}')">Anlegen</button>
-    </div>
-    <div class="status-msg" id="${tempId}-status"></div>
   </div>`;
   el.insertAdjacentHTML("afterbegin",html);
 }
@@ -295,7 +348,8 @@ async function ladeMeldungenAdmin(){
   try{
     const res=await callAdmin({type:"admin_list_einsatzmeldungen",password:ADMIN_PW});
     if(res.error){el.innerHTML='<div class="empty">Zugriff verweigert. Bitte neu anmelden.</div>';return;}
-    renderMeldungenListe(res.rows||[]);
+    LETZTE_MELDUNGEN=res.rows||[];
+    renderMeldungenListe(LETZTE_MELDUNGEN);
   }catch(e){
     el.innerHTML=`<div class="empty">Fehler beim Laden: ${e.message}</div>`;
   }
@@ -303,15 +357,23 @@ async function ladeMeldungenAdmin(){
 
 function renderMeldungenListe(rows){
   const el=document.getElementById("meldungen-liste");
-  document.getElementById("meldungen-count").textContent=`${rows.length} Eintrag${rows.length!==1?"e":""}`;
-  if(rows.length===0){el.innerHTML='<div class="empty">Noch keine Einträge.</div>';return;}
-  el.innerHTML=rows.map(r=>meldungCardHtml(r)).join("");
+  const sortBy=document.getElementById("admin-meldung-sort").value;
+  const sortiert=[...rows].sort((a,b)=>String(a[sortBy]||"").localeCompare(String(b[sortBy]||""),"de"));
+  document.getElementById("meldungen-count").textContent=`${sortiert.length} Eintrag${sortiert.length!==1?"e":""}`;
+  if(sortiert.length===0){el.innerHTML='<div class="empty">Noch keine Einträge.</div>';return;}
+  el.innerHTML=sortiert.map(r=>meldungCardHtml(r)).join("");
 }
 
 function meldungCardHtml(r){
   const id=`m-${r.row}`;
   return `<div class="entry-card" id="${id}">
     <div class="entry-num">Zeile ${r.row}</div>
+    <div class="entry-header" onclick="toggleEntry('${id}')">
+      <span class="entry-arrow">▶</span>
+      <span class="entry-typ-tag">${esc(r.kategorie)}</span>
+      <span class="entry-summary">${esc(r.meldung)}</span>
+    </div>
+    <div class="entry-body">
     <div class="entry-row2">
       <div><label>Kategorie</label><input type="text" id="${id}-kategorie" value="${escAttr(r.kategorie)}"></div>
       <div><label>Alarmierung</label><input type="text" id="${id}-alarmierung" value="${escAttr(r.alarmierung)}"></div>
@@ -325,13 +387,19 @@ function meldungCardHtml(r){
       <button class="btn btn-green" onclick="speichereMeldung(${r.row},'${id}')">Speichern</button>
     </div>
     <div class="status-msg" id="${id}-status"></div>
+    </div>
   </div>`;
 }
 
 function neueMeldung(){
   const el=document.getElementById("meldungen-liste");
   const tempId="m-new-"+Date.now();
-  const html=`<div class="entry-card new" id="${tempId}">
+  const html=`<div class="entry-card new open" id="${tempId}">
+    <div class="entry-header" onclick="toggleEntry('${tempId}')">
+      <span class="entry-arrow">▶</span>
+      <span class="entry-summary">Neue Einsatzmeldung</span>
+    </div>
+    <div class="entry-body">
     <div class="entry-row2">
       <div><label>Kategorie</label><input type="text" id="${tempId}-kategorie"></div>
       <div><label>Alarmierung</label><input type="text" id="${tempId}-alarmierung"></div>
@@ -344,6 +412,7 @@ function neueMeldung(){
       <button class="btn btn-green" onclick="speichereMeldung(null,'${tempId}')">Anlegen</button>
     </div>
     <div class="status-msg" id="${tempId}-status"></div>
+    </div>
   </div>`;
   el.insertAdjacentHTML("afterbegin",html);
 }
