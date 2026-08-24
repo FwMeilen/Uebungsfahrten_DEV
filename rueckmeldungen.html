@@ -87,31 +87,12 @@ select.filter{height:34px;padding:0 8px;border:1px solid var(--gray-mid);backgro
   <div id="content"></div>
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; CLv1.05</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen &nbsp;·&nbsp; CLv1.06</div>
 
 <script>
-const AUSWERTUNG_SHEET_ID="1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
-const MITGLIEDER_SHEET_ID="1bK6IuVpAdLyYc9_NPbJxFMkvCZ0fNvadJABBUM-Rc0M";
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
 let ALLE_EINTRAEGE=[];
 let MITGLIEDER={};
-
-async function ladeMitglieder(){
-  try{
-    const url=`https://docs.google.com/spreadsheets/d/${MITGLIEDER_SHEET_ID}/gviz/tq?tqx=out:json`;
-    const res=await fetch(url);
-    const text=await res.text();
-    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rows=(json.table.rows||[]).slice(1);
-    const result={};
-    rows.forEach(row=>{
-      const c=row.c||[];
-      const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
-      const kuerzel=val(0).toUpperCase();
-      if(kuerzel) result[kuerzel]=`${val(1)} ${val(2)}`.trim();
-    });
-    MITGLIEDER=result;
-  }catch(e){console.warn("Mitglieder konnten nicht geladen werden:",e);}
-}
 
 function vollerName(kuerzel){
   const k=String(kuerzel||"").toUpperCase().trim();
@@ -128,28 +109,25 @@ async function loadData(){
   document.getElementById("content").innerHTML="";
   document.getElementById("count").style.display="none";
   try{
-    const url=`https://docs.google.com/spreadsheets/d/${AUSWERTUNG_SHEET_ID}/gviz/tq?tqx=out:json&sheet=R%C3%BCckmeldungen`;
-    const [res]=await Promise.all([fetch(url),ladeMitglieder()]);
-    const text=await res.text();
-    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rows=(json.table.rows||[]).slice(1);
-    const val=(c,i)=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
+    const res=await fetch(SHEETS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"lade_dashboard_daten"})});
+    const daten=await res.json();
+    MITGLIEDER=daten.mitglieder||{};
 
-    // Spalten: A=Datum,B=Fahrer,C=Fahrzeug,D=Gemeinde,E=Strasse,F=Nr,G=PLZ,H=Ort,I=Hydrant,J=Schlüsselrohr,K=PV,L=Anmerkung Anfahrt
     const cleanNr=nr=>String(nr||"").replace(/\.\d+$/,"").trim();
-    ALLE_EINTRAEGE=rows.map(row=>{
-      const c=row.c||[];
-      return{datum:val(c,0),fahrer:val(c,1),fahrzeug:val(c,2),
-             gemeinde:val(c,3),strasse:val(c,4),nr:cleanNr(val(c,5)),plz:val(c,6),ort:val(c,7),
-             hydrant:val(c,8),schluessel:val(c,9),pv:val(c,10),anmerkung:val(c,11)};
-    }).filter(e=>e.anmerkung||e.pv==="Ja");
+    ALLE_EINTRAEGE=(daten.rueckmeldungen||[]).map(r=>({
+      datum:String(r["Datum"]||""),fahrer:String(r["Fahrer"]||""),fahrzeug:String(r["Fahrzeug"]||""),
+      gemeinde:String(r["Gemeinde"]||""),strasse:String(r["Strasse"]||""),nr:cleanNr(r["Nr"]),
+      plz:String(r["PLZ"]||""),ort:String(r["Ort"]||""),
+      hydrant:String(r["Hydrant"]||""),schluessel:String(r["Schlüsselrohr"]||""),
+      pv:String(r["PV"]||""),anmerkung:String(r["Anmerkung Anfahrt"]||"")
+    })).filter(e=>e.anmerkung||e.pv==="Ja");
 
     populateFilters();
     renderListe();
     document.getElementById("loading").style.display="none";
   }catch(e){
     document.getElementById("loading").style.display="none";
-    document.getElementById("content").innerHTML=`<div class="empty">Fehler beim Laden: ${e.message}<br><small>Sicherstellen dass der Reiter "Rückmeldungen" im Auswertungs-Sheet existiert und öffentlich lesbar ist.</small></div>`;
+    document.getElementById("content").innerHTML=`<div class="empty">Fehler beim Laden: ${e.message}</div>`;
   }
 }
 

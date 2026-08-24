@@ -156,50 +156,18 @@ select.filter{height:32px;padding:0 8px;border:1px solid var(--gray-mid);backgro
   </div>
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.05</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.06</div>
 
 <script>
-const SHEET_ID = "1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
-const BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
 
-let DATA = {fahrten:[], fragen:[]};
+let DATA = {fahrten:[], fragen:[], rueckmeldungen:[]};
 let charts = {};
-const MITGLIEDER_SHEET_ID="1bK6IuVpAdLyYc9_NPbJxFMkvCZ0fNvadJABBUM-Rc0M";
 let MITGLIEDER={};
-
-async function ladeMitglieder(){
-  try{
-    const url=`https://docs.google.com/spreadsheets/d/${MITGLIEDER_SHEET_ID}/gviz/tq?tqx=out:json`;
-    const res=await fetch(url);
-    const text=await res.text();
-    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rows=(json.table.rows||[]).slice(1);
-    const result={};
-    rows.forEach(row=>{
-      const c=row.c||[];
-      const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
-      const kuerzel=val(0).toUpperCase();
-      if(kuerzel) result[kuerzel]=`${val(1)} ${val(2)}`.trim();
-    });
-    MITGLIEDER=result;
-  }catch(e){console.warn("Mitglieder konnten nicht geladen werden:",e);}
-}
 
 function vollerName(kuerzel){
   const k=String(kuerzel||"").toUpperCase().trim();
   return MITGLIEDER[k]||kuerzel;
-}
-
-async function fetchSheet(sheet) {
-  const url = `${BASE}&sheet=${encodeURIComponent(sheet)}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-  const cols = json.table.cols.map(c => c.label.trim());
-  const rows = (json.table.rows || []).map(r =>
-    Object.fromEntries(cols.map((c, i) => [c, r.c[i] ? r.c[i].v : ""]))
-  );
-  return rows;
 }
 
 async function loadData() {
@@ -208,13 +176,12 @@ async function loadData() {
   document.getElementById("error-box").style.display = "none";
 
   try {
-    const [fahrten, fragen] = await Promise.all([
-      fetchSheet("Fahrten"),
-      fetchSheet("Fragen"),
-      ladeMitglieder()
-    ]);
-    DATA.fahrten = fahrten;
-    DATA.fragen = fragen;
+    const res=await fetch(SHEETS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"lade_dashboard_daten"})});
+    const daten=await res.json();
+    DATA.fahrten = daten.fahrten||[];
+    DATA.fragen = daten.fragen||[];
+    DATA.rueckmeldungen = daten.rueckmeldungen||[];
+    MITGLIEDER = daten.mitglieder||{};
     render();
     document.getElementById("loading").style.display = "none";
     document.getElementById("content").style.display = "block";
@@ -224,7 +191,7 @@ async function loadData() {
     document.getElementById("loading").style.display = "none";
     const eb = document.getElementById("error-box");
     eb.style.display = "block";
-    eb.textContent = "Fehler beim Laden: " + e.message + " – Bitte sicherstellen dass das Sheet öffentlich lesbar ist.";
+    eb.textContent = "Fehler beim Laden: " + e.message;
   }
 }
 
@@ -241,31 +208,21 @@ function render() {
 }
 
 function renderZufahrt() {
-  // Letzte 3 Zufahrts-Rückmeldungen aus Reiter "Rückmeldungen"
-  const RUECK_SHEET_ID = "1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
   const card = document.getElementById("zufahrt-card");
   const el = document.getElementById("zufahrt-list");
-  fetch(`https://docs.google.com/spreadsheets/d/${RUECK_SHEET_ID}/gviz/tq?tqx=out:json&sheet=R%C3%BCckmeldungen`)
-    .then(r=>r.text())
-    .then(text=>{
-      const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-      const rows=(json.table.rows||[]).slice(1);
-      const val=(c,i)=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
-      // Spalten: A=Datum,B=Fahrer,C=Fahrzeug,D=Gemeinde,E=Strasse,F=Nr,G=PLZ,H=Ort,I=Hydrant,J=Schlüsselrohr,K=PV,L=Anmerkung
-      const mitZufahrt=rows.map(row=>{
-        const c=row.c||[];
-        return{datum:val(c,0),fahrer:val(c,1),fahrzeug:val(c,2),
-               strasse:val(c,4),nr:val(c,5),plz:val(c,6),ort:val(c,7),anmerkung:val(c,11)};
-      }).filter(e=>e.anmerkung).slice(-3).reverse();
-      if(mitZufahrt.length===0){card.style.display="none";return;}
-      card.style.display="block";
-      el.innerHTML=mitZufahrt.map(e=>`
-        <div class="frage-row" style="align-items:flex-start;flex-direction:column;gap:3px;padding:10px 0;">
-          <div style="font-weight:700;font-size:13px;">${e.strasse} ${e.nr}, ${e.plz} ${e.ort}</div>
-          <div style="font-size:13px;color:var(--text2);">${e.anmerkung}</div>
-          <div style="font-size:11px;color:var(--text3);">${e.datum?e.datum+" · ":""}${e.fahrzeug?e.fahrzeug+" · ":""}${e.fahrer||""}</div>
-        </div>`).join("");
-    }).catch(e=>console.warn("Zufahrt:",e));
+  const mitZufahrt=(DATA.rueckmeldungen||[]).map(r=>({
+    datum:String(r["Datum"]||""),fahrer:String(r["Fahrer"]||""),fahrzeug:String(r["Fahrzeug"]||""),
+    strasse:String(r["Strasse"]||""),nr:String(r["Nr"]||""),plz:String(r["PLZ"]||""),ort:String(r["Ort"]||""),
+    anmerkung:String(r["Anmerkung Anfahrt"]||"")
+  })).filter(e=>e.anmerkung).slice(-3).reverse();
+  if(mitZufahrt.length===0){card.style.display="none";return;}
+  card.style.display="block";
+  el.innerHTML=mitZufahrt.map(e=>`
+    <div class="frage-row" style="align-items:flex-start;flex-direction:column;gap:3px;padding:10px 0;">
+      <div style="font-weight:700;font-size:13px;">${e.strasse} ${e.nr}, ${e.plz} ${e.ort}</div>
+      <div style="font-size:13px;color:var(--text2);">${e.anmerkung}</div>
+      <div style="font-size:11px;color:var(--text3);">${e.datum?e.datum+" · ":""}${e.fahrzeug?e.fahrzeug+" · ":""}${e.fahrer||""}</div>
+    </div>`).join("");
 }
 
 function renderPieCharts() {
@@ -440,11 +397,14 @@ function renderKPIs() {
   const daten = f.map(r => r["Datum"]).filter(Boolean).sort();
   if (daten.length > 0) {
     const erstesDatum = daten[0];
-    // Google Sheets liefert Datum als "Date(2026,4,29)" oder als String
     let anzeige = erstesDatum;
-    const dateMatch = String(erstesDatum).match(/Date\((\d+),(\d+),(\d+)\)/);
-    if (dateMatch) {
-      const d = new Date(parseInt(dateMatch[1]), parseInt(dateMatch[2]), parseInt(dateMatch[3]));
+    const isoMatch = String(erstesDatum).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const gvizMatch = String(erstesDatum).match(/Date\((\d+),(\d+),(\d+)\)/);
+    if (isoMatch) {
+      const d = new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2])-1, parseInt(isoMatch[3]));
+      anzeige = d.toLocaleDateString("de-CH");
+    } else if (gvizMatch) {
+      const d = new Date(parseInt(gvizMatch[1]), parseInt(gvizMatch[2]), parseInt(gvizMatch[3]));
       anzeige = d.toLocaleDateString("de-CH");
     }
     document.getElementById("daten-seit").textContent = "Daten seit " + anzeige;

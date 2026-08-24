@@ -156,12 +156,10 @@ select#admin-fahrzeug{max-width:260px;}
 
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.05</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.06</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
-const AUSWERTUNG_SHEET_ID="1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
-const MITGLIEDER_SHEET_ID="1bK6IuVpAdLyYc9_NPbJxFMkvCZ0fNvadJABBUM-Rc0M";
 const FAHRZEUGE_B=["PTF 1/6","VA","PTF 4/7","PTF 2/3","OW"];
 const FAHRZEUGE_C=["TLF","ADL","PIF","ULF","OC","SVF","MTF"];
 const FAHRZEUGE=[...FAHRZEUGE_B,...FAHRZEUGE_C,"Allgemeine Fragen"];
@@ -176,27 +174,14 @@ function toggleEntry(id){
   if(el) el.classList.toggle("open");
 }
 
-async function gvizFetch(sheetId,sheetName){
-  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`+(sheetName?`&sheet=${encodeURIComponent(sheetName)}`:"");
-  const res=await fetch(url);
-  const text=await res.text();
-  const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-  return (json.table.rows||[]);
-}
-function gvizVal(row,i){
-  const c=(row.c||[])[i];
-  if(c==null) return "";
-  return c.f!=null?String(c.f).trim():(c.v!=null?String(c.v).trim():"");
-}
+let AUSW_FRAGEN=[], AUSW_TAETIGKEITEN=[];
 
 async function ladeMitglieder(){
   try{
-    const rows=await gvizFetch(MITGLIEDER_SHEET_ID);
+    const res=await fetch(SHEETS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"lade_dashboard_daten"})});
+    const daten=await res.json();
     const result={};
-    rows.slice(1).forEach(row=>{
-      const kuerzel=gvizVal(row,0).toUpperCase();
-      if(kuerzel) result[kuerzel]={vorname:gvizVal(row,1),name:gvizVal(row,2),vollerName:`${gvizVal(row,1)} ${gvizVal(row,2)}`.trim()};
-    });
+    Object.entries(daten.mitglieder||{}).forEach(([k,v])=>{ result[k]={vollerName:v}; });
     MITGLIEDER=result;
   }catch(e){console.warn("Mitglieder konnten nicht geladen werden:",e);}
 }
@@ -526,13 +511,15 @@ async function sucheLookup(){
       el.innerHTML='<div class="empty">Keine Person gefunden.</div>';
       return;
     }
-    const rows=await gvizFetch(AUSWERTUNG_SHEET_ID,"Fahrten");
-    // Spalten: A=Datum,B=Fahrer,C=Beifahrer,D=Fahrzeug,E=Fahrt,F=Aufbau,G=Gebiet,H=Abfahrt,I=Rückkehr,J=AnzahlEinsätze,K=Einsatzadressen,L=QuizRichtig,M=QuizTotal,N=%,O=Hilfe
-    const treffer=rows.slice(1).map(row=>({
-      datum:gvizVal(row,0),fahrer:gvizVal(row,1),beifahrer:gvizVal(row,2),fahrzeug:gvizVal(row,3),
-      fahrt:gvizVal(row,4),aufbau:gvizVal(row,5),gebiet:gvizVal(row,6),abfahrt:gvizVal(row,7),rueckkehr:gvizVal(row,8),
-      anzahlEinsaetze:gvizVal(row,9),einsatzadressen:gvizVal(row,10),
-      quizRichtig:gvizVal(row,11),quizTotal:gvizVal(row,12),pct:gvizVal(row,13),hilfe:gvizVal(row,14)
+    const res=await callAdmin({type:"admin_lade_auswertung",password:ADMIN_PW});
+    if(res.error){el.innerHTML='<div class="empty">Zugriff verweigert. Bitte neu anmelden.</div>';return;}
+    AUSW_FRAGEN=res.fragen||[];
+    AUSW_TAETIGKEITEN=res.taetigkeiten||[];
+    const treffer=(res.fahrten||[]).map(row=>({
+      datum:String(row["Datum"]||""),fahrer:String(row["Fahrer"]||""),beifahrer:String(row["Beifahrer"]||""),fahrzeug:String(row["Fahrzeug"]||""),
+      fahrt:String(row["Fahrt"]||""),aufbau:String(row["Aufbau"]||""),gebiet:String(row["Gebiet"]||""),abfahrt:String(row["Abfahrt"]||""),rueckkehr:String(row["Rückkehr"]||""),
+      anzahlEinsaetze:String(row["Anzahl Einsätze"]||""),einsatzadressen:String(row["Einsatzadressen"]||""),
+      quizRichtig:String(row["Quiz Richtig"]||""),quizTotal:String(row["Quiz Total"]||""),pct:String(row["%"]||""),hilfe:String(row["Hilfe"]||"")
     })).filter(r=>kuerzelSet.has(r.fahrer.toUpperCase())||kuerzelSet.has(r.beifahrer.toUpperCase()));
     treffer.sort((a,b)=>b.datum.localeCompare(a.datum));
     LOOKUP_ERGEBNISSE=treffer;
@@ -575,22 +562,14 @@ async function reprintPDF(idx){
   const statusEl=document.getElementById(`lookup-status-${idx}`);
   statusEl.className="status-msg";statusEl.style.display="block";statusEl.textContent="PDF wird erstellt…";
   try{
-    let fragenDetail=[];
-    let taetigkeitenDetail=[];
-    try{
-      const fragenRows=await gvizFetch(AUSWERTUNG_SHEET_ID,"Fragen");
-      fragenDetail=fragenRows.slice(1).map(row=>({
-        datum:gvizVal(row,0),fahrer:gvizVal(row,1),fahrzeug:gvizVal(row,2),
-        frage:gvizVal(row,3),gegeben:gvizVal(row,4),korrekt:gvizVal(row,5),richtig:gvizVal(row,6)
-      })).filter(q=>q.datum===r.datum&&q.fahrer===r.fahrer&&q.fahrzeug===r.fahrzeug);
-    }catch(e){}
-    try{
-      const taetRows=await gvizFetch(AUSWERTUNG_SHEET_ID,"Tätigkeiten");
-      taetigkeitenDetail=taetRows.slice(1).map(row=>({
-        datum:gvizVal(row,0),fahrer:gvizVal(row,1),fahrzeug:gvizVal(row,2),
-        taetigkeit:gvizVal(row,3),stufe:gvizVal(row,4),hilfe:gvizVal(row,5)
-      })).filter(t=>t.datum===r.datum&&t.fahrer===r.fahrer&&t.fahrzeug===r.fahrzeug);
-    }catch(e){}
+    const fragenDetail=AUSW_FRAGEN.map(row=>({
+      datum:String(row["Datum"]||""),fahrer:String(row["Fahrer"]||""),fahrzeug:String(row["Fahrzeug"]||""),
+      frage:String(row["Frage"]||""),gegeben:String(row["Gegeben"]||""),korrekt:String(row["Korrekt"]||""),richtig:String(row["Richtig"]||"")
+    })).filter(q=>q.datum===r.datum&&q.fahrer===r.fahrer&&q.fahrzeug===r.fahrzeug);
+    const taetigkeitenDetail=AUSW_TAETIGKEITEN.map(row=>({
+      datum:String(row["Datum"]||""),fahrer:String(row["Fahrer"]||""),fahrzeug:String(row["Fahrzeug"]||""),
+      taetigkeit:String(row["Tätigkeit"]||""),stufe:String(row["Stufe"]||""),hilfe:String(row["Hilfe"]||"")
+    })).filter(t=>t.datum===r.datum&&t.fahrer===r.fahrer&&t.fahrzeug===r.fahrzeug);
     generierePDFAdmin(r,fragenDetail,taetigkeitenDetail);
     statusEl.style.display="none";
   }catch(e){
@@ -682,7 +661,7 @@ function generierePDFAdmin(r,fragenDetail,taetigkeitenDetail){
   y+=6;
   doc.setFontSize(8);
   doc.setTextColor(120,120,120);
-  doc.text(`Neu ausgestellt: ${new Date().toLocaleString("de-CH")} · CLv1.05`,20,y);
+  doc.text(`Neu ausgestellt: ${new Date().toLocaleString("de-CH")} · CLv1.06`,20,y);
 
   const dateiname=`Fahrtraining_${r.datum}_${r.fahrer}_Kopie.pdf`;
   doc.save(dateiname);
