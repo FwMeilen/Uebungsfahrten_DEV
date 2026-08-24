@@ -495,21 +495,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.05</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.06</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
-const FRAGEN_SHEET_ID="1EVK63S1UzguuIxlYgkSLT3_Aw9yZpb_YxuUjTC7fEdU";
 const FAHRZEUGE_B=["PTF 1/6","VA","PTF 4/7","PTF 2/3","OW"];
 const FAHRZEUGE_C=["TLF","ADL","PIF","ULF","OC","SVF","MTF"];
 const FAHRZEUGE=[...FAHRZEUGE_B,...FAHRZEUGE_C];
 const STUETZPUNKT_FAHRZEUGE=["PIF","ULF","OC","SVF","PTF 2/3"];
 
 let selectedKat="";
-const ADDR_CACHE_KEY="fw_adressen_v9";
-const ADDR_TTL=24*60*60*1000; // 1 Tag
-const FRAGEN_CACHE_KEY="fw_fragen_v3";
-const FRAGEN_TTL=2*60*60*1000; // 2 Stunden
 
 const GEMEINDEN_ORTS=["meilen","feldmeilen","herrliberg"];
 const GEMEINDEN_STUETZ=["meilen","feldmeilen","herrliberg","uetikon","oetwil","maennedorf","staefa","hombrechtikon"];
@@ -520,56 +515,43 @@ const GEMEINDE_INFO={
   staefa:{name:"Stäfa",plz:"8712"},hombrechtikon:{name:"Hombrechtikon",plz:"8634"}
 };
 
-const EINSAETZE_CACHE_KEY="fw_einsaetze";
-const EINSAETZE_TTL=7*24*60*60*1000; // 7 Tage
 let EINSAETZE=[];
+let MITGLIEDER={};
+const INIT_CACHE_KEY="fw_init_v1";
+const INIT_TTL=2*60*60*1000; // 2 Stunden
 
-async function ladeEinsaetze(){
+async function ladeInitDaten(){
   try{
-    const cached=localStorage.getItem(EINSAETZE_CACHE_KEY);
-    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<EINSAETZE_TTL){EINSAETZE=obj.data;return;}}
+    const cached=localStorage.getItem(INIT_CACHE_KEY);
+    if(cached){
+      const obj=JSON.parse(cached);
+      if(Date.now()-obj.ts<INIT_TTL){ anwendenInitDaten(obj.data); return; }
+    }
   }catch(e){}
-  try{
-    const url=`https://docs.google.com/spreadsheets/d/${FRAGEN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=Einsatzmeldungen`;
-    const res=await fetch(url);
-    const text=await res.text();
-    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rows=(json.table.rows||[]).slice(1);
-    EINSAETZE=rows.map(row=>{
-      const c=row.c||[];
-      const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
-      return{stichwort:val(0),alarmierung:val(1),meldung:val(2),mittel:val(3)};
-    }).filter(e=>e.meldung);
-    try{localStorage.setItem(EINSAETZE_CACHE_KEY,JSON.stringify({ts:Date.now(),data:EINSAETZE}));}catch(e){}
-  }catch(e){console.warn("Einsatzmeldungen konnten nicht geladen werden:",e);}
+  const res=await fetch(SHEETS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"lade_init_daten"})});
+  const dataRaw=await res.json();
+  anwendenInitDaten(dataRaw);
+  try{localStorage.setItem(INIT_CACHE_KEY,JSON.stringify({ts:Date.now(),data:dataRaw}));}catch(e){}
 }
 
-const MITGLIEDER_SHEET_ID="1bK6IuVpAdLyYc9_NPbJxFMkvCZ0fNvadJABBUM-Rc0M";
-const MITGLIEDER_CACHE_KEY="fw_mitglieder";
-const MITGLIEDER_TTL=24*60*60*1000; // 1 Tag
-let MITGLIEDER={};
-
-async function ladeMitglieder(){
-  try{
-    const cached=localStorage.getItem(MITGLIEDER_CACHE_KEY);
-    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<MITGLIEDER_TTL){MITGLIEDER=obj.data;return;}}
-  }catch(e){}
-  try{
-    const url=`https://docs.google.com/spreadsheets/d/${MITGLIEDER_SHEET_ID}/gviz/tq?tqx=out:json`;
-    const res=await fetch(url);
-    const text=await res.text();
-    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rows=(json.table.rows||[]).slice(1);
-    const result={};
-    rows.forEach(row=>{
-      const c=row.c||[];
-      const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
-      const kuerzel=val(0).toUpperCase();
-      if(kuerzel) result[kuerzel]=`${val(1)} ${val(2)}`.trim();
-    });
-    MITGLIEDER=result;
-    try{localStorage.setItem(MITGLIEDER_CACHE_KEY,JSON.stringify({ts:Date.now(),data:result}));}catch(e){}
-  }catch(e){console.warn("Mitglieder konnten nicht geladen werden:",e);}
+function anwendenInitDaten(dataRaw){
+  const result={};
+  Object.keys(GEMEINDE_INFO).forEach(k=>{result[k]=[];});
+  for(const row of (dataRaw.adressen||[])){
+    const gemeinde=String(row.gemeinde||"").toLowerCase().replace(/\s+/g,"");
+    const str=row.strasse,nr=row.nr,plz=row.plz,ort=row.ort;
+    if(!gemeinde||!str||!nr) continue;
+    const key=Object.keys(GEMEINDE_INFO).find(k=>k===gemeinde||GEMEINDE_INFO[k].name.toLowerCase().replace(/\s+/g,"")===gemeinde);
+    if(!key) continue;
+    if((result[key]||[]).length>=40) continue;
+    if(!result[key]) result[key]=[];
+    result[key].push({str,nr,plz:plz||GEMEINDE_INFO[key].plz,ort:ort||GEMEINDE_INFO[key].name});
+  }
+  ADRESSEN=result;
+  FRAGEN=dataRaw.fragen||{};
+  FRAGEN_ALLGEMEIN=dataRaw.fragenAllgemein||[];
+  EINSAETZE=dataRaw.einsaetze||[];
+  MITGLIEDER=dataRaw.mitglieder||{};
 }
 
 function vollerName(kuerzel){
@@ -592,48 +574,6 @@ function today(){return new Date().toISOString().split("T")[0];}
 function nowTime(){return new Date().toTimeString().slice(0,5);}
 function setMsg(m,s=""){document.getElementById("init-msg").textContent=m;document.getElementById("init-sub").textContent=s;}
 
-/* ── Adressen aus Google Sheets ── */
-async function ladeAdressen(){
-  try{
-    const cached=localStorage.getItem(ADDR_CACHE_KEY);
-    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<ADDR_TTL){ADRESSEN=obj.data;return;}}
-  }catch(e){}
-  setMsg("Adressen werden geladen…","Google Sheets");
-  try{
-    const url=`https://docs.google.com/spreadsheets/d/1gmUs6tQBwAlHzGdjJ7jXWrGX9XHgC0yzUbn-LpZ7hbY/gviz/tq?tqx=out:json&sheet=Adressen`;
-    const res=await fetch(url);
-    const text=await res.text();
-    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rows=(json.table.rows||[]).slice(1); // Zeile 1 = Header
-    const result={};
-    Object.keys(GEMEINDE_INFO).forEach(k=>{result[k]=[];});
-    for(const row of rows){
-      const c=row.c||[];
-      const val=i=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
-      const gemeinde=val(0).toLowerCase().replace(/\s+/g,"");
-      const str=val(1);
-      const nr=val(2);
-      const plz=val(3);
-      const ort=val(4);
-      if(!gemeinde||!str||!nr) continue;
-      // Gemeinde-Key normalisieren
-      const key=Object.keys(GEMEINDE_INFO).find(k=>
-        k===gemeinde||
-        GEMEINDE_INFO[k].name.toLowerCase().replace(/\s+/g,"")===gemeinde
-      );
-      if(!key) continue;
-      if((result[key]||[]).length>=40) continue;
-      if(!result[key]) result[key]=[];
-      result[key].push({str,nr,plz:plz||GEMEINDE_INFO[key].plz,ort:ort||GEMEINDE_INFO[key].name});
-    }
-    ADRESSEN=result;
-    try{localStorage.setItem(ADDR_CACHE_KEY,JSON.stringify({ts:Date.now(),data:result}));}catch(e){}
-  }catch(e){
-    console.warn("Adressen konnten nicht geladen werden:",e);
-    ADRESSEN={};
-  }
-}
-
 function genAddr(){
   const pool=ST.gebiet==="stuetzpunkt"?GEMEINDEN_STUETZ:GEMEINDEN_ORTS;
   const lastStr=ST.einsatzAddr?ST.einsatzAddr.split(",")[0].trim():"";
@@ -650,71 +590,19 @@ function genAddr(){
   return null;
 }
 
-/* ── Fragen ── */
-async function ladeFragen(){
-  try{
-    const cached=localStorage.getItem(FRAGEN_CACHE_KEY);
-    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<FRAGEN_TTL){FRAGEN=obj.data;return;}}
-  }catch(e){}
-  setMsg("Fragen werden geladen…","Google Sheets");
-  const result={};
-  const fetchMitTimeout=async(url)=>{
-    const ctrl=new AbortController();
-    const tid=setTimeout(()=>ctrl.abort(),5000);
-    try{const r=await fetch(url,{signal:ctrl.signal});return r;}
-    finally{clearTimeout(tid);}
-  };
-  await Promise.all(FAHRZEUGE.map(async fzg=>{
-    try{
-      const url=`https://docs.google.com/spreadsheets/d/${FRAGEN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(fzg)}`;
-      const res=await fetchMitTimeout(url);
-      const text=await res.text();
-      const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-      const rows=(json.table.rows||[]).slice(1);
-      result[fzg]=rows.map(row=>{
-        const c=row.c||[];
-        const val=i=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";        const map={A:0,B:1,C:2,D:3};
-        const typ=val(0).toLowerCase();
-        return{typ:typ||"frage",f:val(1),a:[val(2),val(3),val(4),val(5)],r:map[val(6).toUpperCase()]??0,e:val(7)};
-      }).filter(q=>q.f);
-    }catch(e){result[fzg]=[];}
-  }));
-  // Allgemeine Fragen laden
-  try{
-    const urlAllg=`https://docs.google.com/spreadsheets/d/${FRAGEN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=Allgemeine%20Fragen`;
-    const resAllg=await fetchMitTimeout(urlAllg);
-    const textAllg=await resAllg.text();
-    const jsonAllg=JSON.parse(textAllg.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const rowsAllg=(jsonAllg.table.rows||[]).slice(1);
-    FRAGEN_ALLGEMEIN=rowsAllg.map(row=>{
-      const c=row.c||[];
-      const val=i=>c[i]!=null?(c[i].f!=null?String(c[i].f).trim():(c[i].v!=null?String(c[i].v).trim():"")):"";
-      const map={A:0,B:1,C:2,D:3};
-      const typ=val(0).toLowerCase();
-      return{typ:typ||"frage",f:val(1),a:[val(2),val(3),val(4),val(5)],r:map[val(6).toUpperCase()]??0,e:val(7)};
-    }).filter(q=>q.f);
-  }catch(e){FRAGEN_ALLGEMEIN=[];console.warn("Allgemeine Fragen:",e);}
-  FRAGEN=result;
-  try{localStorage.setItem(FRAGEN_CACHE_KEY,JSON.stringify({ts:Date.now(),data:result}));}catch(e){}
-}
-
 /* ── Init ── */
 async function init(){
   const fehler=[];
   try{
-    await Promise.all([
-      ladeAdressen().catch(e=>{console.warn("Adressen:",e);fehler.push("Adressen (Einsatzziele)");}),
-      ladeFragen().catch(e=>{console.warn("Fragen:",e);fehler.push("Abfrage-Fragen");}),
-      ladeEinsaetze().catch(e=>{console.warn("Einsaetze:",e);fehler.push("Einsatzmeldungen");}),
-      ladeMitglieder().catch(e=>console.warn("Mitglieder:",e))
-    ]);
+    setMsg("Daten werden geladen…","Server");
+    await ladeInitDaten();
     // Prüfe ob Daten wirklich vorhanden
     const addrCount=Object.values(ADRESSEN).reduce((s,a)=>s+a.length,0);
-    if(addrCount===0&&!fehler.includes("Adressen (Einsatzziele)")) fehler.push("Adressen (Einsatzziele) – Sheet leer oder nicht erreichbar");
-    if(EINSAETZE.length===0&&!fehler.includes("Einsatzmeldungen")) fehler.push("Einsatzmeldungen – Sheet leer oder nicht erreichbar");
+    if(addrCount===0) fehler.push("Adressen (Einsatzziele) – Sheet leer oder nicht erreichbar");
+    if(EINSAETZE.length===0) fehler.push("Einsatzmeldungen – Sheet leer oder nicht erreichbar");
     const fragenCount=Object.values(FRAGEN).reduce((s,a)=>s+a.length,0);
-    if(fragenCount===0&&!fehler.includes("Abfrage-Fragen")) fehler.push("Abfrage-Fragen – Sheets leer oder nicht erreichbar");
-  }catch(e){console.warn("Init-Fehler:",e);fehler.push("Unbekannter Ladefehler");}
+    if(fragenCount===0) fehler.push("Abfrage-Fragen – Sheets leer oder nicht erreichbar");
+  }catch(e){console.warn("Init-Fehler:",e);fehler.push("Verbindungsfehler zum Server");}
   finally{
     hideOverlay();
     showLoadPopup(fehler);
@@ -1418,7 +1306,7 @@ function generierePDF(){
   y+=6;
   doc.setFontSize(8);
   doc.setTextColor(120,120,120);
-  doc.text(`Erstellt: ${new Date().toLocaleString("de-CH")} · CLv1.05`,20,y);
+  doc.text(`Erstellt: ${new Date().toLocaleString("de-CH")} · CLv1.06`,20,y);
 
   const dateiname=`Fahrtraining_${ST.datum}_${ST.fahrer}.pdf`;
   doc.save(dateiname);
