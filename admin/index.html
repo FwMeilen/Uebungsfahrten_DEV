@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin – Fahrtraining Stützpunktfeuerwehr Meilen</title>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -20,7 +21,7 @@ body{font-family:'Open Sans',Arial,sans-serif;background:var(--bg3);color:var(--
 .logo-text{color:white;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;line-height:1.2;}
 .logo-text span{display:block;font-size:10px;font-weight:400;color:#999;text-transform:none;letter-spacing:0;}
 .red-stripe{height:4px;background:var(--red);}
-.page{max-width:800px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+.page{max-width:900px;margin:0 auto;padding:1.5rem 1rem 4rem;}
 label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray);margin:0.75rem 0 4px;}
 label:first-child{margin-top:0;}
 input[type="text"],input[type="password"],textarea,select{width:100%;padding:9px 10px;border:1px solid var(--gray-mid);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;border-radius:0;}
@@ -91,12 +92,19 @@ select#admin-fahrzeug{max-width:260px;}
   <!-- ADMIN -->
   <div id="s-admin" style="display:none">
     <div class="tabs">
-      <button class="tab-btn active" id="tab-fragen" onclick="switchTab('fragen')">Fahrzeugfragen</button>
+      <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">Dashboard</button>
+      <button class="tab-btn" id="tab-fragen" onclick="switchTab('fragen')">Fahrzeugfragen</button>
       <button class="tab-btn" id="tab-meldungen" onclick="switchTab('meldungen')">Einsatzmeldungen</button>
+      <button class="tab-btn" id="tab-lookup" onclick="switchTab('lookup')">Fahrer-Lookup</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="panel-dashboard">
+      <iframe src="../dashboard.html" style="width:100%;height:82vh;border:1px solid var(--gray-mid);display:block;"></iframe>
     </div>
 
     <!-- FAHRZEUGFRAGEN -->
-    <div id="panel-fragen">
+    <div id="panel-fragen" style="display:none">
       <div class="card">
         <h2>Fahrzeugfragen</h2>
         <div class="entry-row2">
@@ -131,14 +139,29 @@ select#admin-fahrzeug{max-width:260px;}
       </div>
       <div id="meldungen-liste"></div>
     </div>
+
+    <!-- FAHRER-LOOKUP -->
+    <div id="panel-lookup" style="display:none">
+      <div class="card">
+        <h2>Fahrer-Lookup</h2>
+        <label>Kürzel oder Name</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="lookup-suche" style="flex:1;" onkeydown="if(event.key==='Enter')sucheLookup()">
+          <button class="btn btn-green" onclick="sucheLookup()">Suchen</button>
+        </div>
+      </div>
+      <div id="lookup-ergebnisse"></div>
+    </div>
   </div>
 
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.04</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.05</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
+const AUSWERTUNG_SHEET_ID="1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
+const MITGLIEDER_SHEET_ID="1bK6IuVpAdLyYc9_NPbJxFMkvCZ0fNvadJABBUM-Rc0M";
 const FAHRZEUGE_B=["PTF 1/6","VA","PTF 4/7","PTF 2/3","OW"];
 const FAHRZEUGE_C=["TLF","ADL","PIF","ULF","OC","SVF","MTF"];
 const FAHRZEUGE=[...FAHRZEUGE_B,...FAHRZEUGE_C,"Allgemeine Fragen"];
@@ -146,11 +169,38 @@ const FAHRZEUGE=[...FAHRZEUGE_B,...FAHRZEUGE_C,"Allgemeine Fragen"];
 let ADMIN_PW="";
 let LETZTE_FRAGEN=[];
 let LETZTE_MELDUNGEN=[];
+let MITGLIEDER={};
 
 function toggleEntry(id){
   const el=document.getElementById(id);
   if(el) el.classList.toggle("open");
 }
+
+async function gvizFetch(sheetId,sheetName){
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`+(sheetName?`&sheet=${encodeURIComponent(sheetName)}`:"");
+  const res=await fetch(url);
+  const text=await res.text();
+  const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+  return (json.table.rows||[]);
+}
+function gvizVal(row,i){
+  const c=(row.c||[])[i];
+  if(c==null) return "";
+  return c.f!=null?String(c.f).trim():(c.v!=null?String(c.v).trim():"");
+}
+
+async function ladeMitglieder(){
+  try{
+    const rows=await gvizFetch(MITGLIEDER_SHEET_ID);
+    const result={};
+    rows.slice(1).forEach(row=>{
+      const kuerzel=gvizVal(row,0).toUpperCase();
+      if(kuerzel) result[kuerzel]={vorname:gvizVal(row,1),name:gvizVal(row,2),vollerName:`${gvizVal(row,1)} ${gvizVal(row,2)}`.trim()};
+    });
+    MITGLIEDER=result;
+  }catch(e){console.warn("Mitglieder konnten nicht geladen werden:",e);}
+}
+
 
 async function callAdmin(payload){
   const res=await fetch(SHEETS_URL,{
@@ -174,6 +224,7 @@ async function login(){
       document.getElementById("s-admin").style.display="block";
       populateFahrzeugSelect();
       ladeFragenAdmin();
+      ladeMitglieder();
     } else {
       errEl.style.display="block";
     }
@@ -184,10 +235,14 @@ async function login(){
 }
 
 function switchTab(tab){
+  document.getElementById("tab-dashboard").classList.toggle("active",tab==="dashboard");
   document.getElementById("tab-fragen").classList.toggle("active",tab==="fragen");
   document.getElementById("tab-meldungen").classList.toggle("active",tab==="meldungen");
+  document.getElementById("tab-lookup").classList.toggle("active",tab==="lookup");
+  document.getElementById("panel-dashboard").style.display=tab==="dashboard"?"block":"none";
   document.getElementById("panel-fragen").style.display=tab==="fragen"?"block":"none";
   document.getElementById("panel-meldungen").style.display=tab==="meldungen"?"block":"none";
+  document.getElementById("panel-lookup").style.display=tab==="lookup"?"block":"none";
   if(tab==="meldungen") ladeMeldungenAdmin();
 }
 
@@ -449,6 +504,188 @@ async function loescheMeldung(row,id){
   }catch(e){
     statusEl.className="status-msg status-err";statusEl.textContent="Fehler: "+e.message;
   }
+}
+
+/* ── Fahrer-Lookup ── */
+let LOOKUP_ERGEBNISSE=[];
+
+async function sucheLookup(){
+  const input=document.getElementById("lookup-suche").value.trim();
+  const el=document.getElementById("lookup-ergebnisse");
+  if(!input){el.innerHTML="";return;}
+  el.innerHTML='<div class="loading">Wird gesucht…</div>';
+  try{
+    if(Object.keys(MITGLIEDER).length===0) await ladeMitglieder();
+    const inputUpper=input.toUpperCase();
+    let kuerzelSet=new Set();
+    if(MITGLIEDER[inputUpper]) kuerzelSet.add(inputUpper);
+    Object.entries(MITGLIEDER).forEach(([k,m])=>{
+      if(m.vollerName.toLowerCase().includes(input.toLowerCase())) kuerzelSet.add(k);
+    });
+    if(kuerzelSet.size===0){
+      el.innerHTML='<div class="empty">Keine Person gefunden.</div>';
+      return;
+    }
+    const rows=await gvizFetch(AUSWERTUNG_SHEET_ID,"Fahrten");
+    // Spalten: A=Datum,B=Fahrer,C=Beifahrer,D=Fahrzeug,E=Fahrt,F=Aufbau,G=Gebiet,H=Abfahrt,I=Rückkehr,J=AnzahlEinsätze,K=Einsatzadressen,L=QuizRichtig,M=QuizTotal,N=%,O=Hilfe
+    const treffer=rows.slice(1).map(row=>({
+      datum:gvizVal(row,0),fahrer:gvizVal(row,1),beifahrer:gvizVal(row,2),fahrzeug:gvizVal(row,3),
+      fahrt:gvizVal(row,4),aufbau:gvizVal(row,5),gebiet:gvizVal(row,6),abfahrt:gvizVal(row,7),rueckkehr:gvizVal(row,8),
+      anzahlEinsaetze:gvizVal(row,9),einsatzadressen:gvizVal(row,10),
+      quizRichtig:gvizVal(row,11),quizTotal:gvizVal(row,12),pct:gvizVal(row,13),hilfe:gvizVal(row,14)
+    })).filter(r=>kuerzelSet.has(r.fahrer.toUpperCase())||kuerzelSet.has(r.beifahrer.toUpperCase()));
+    treffer.sort((a,b)=>b.datum.localeCompare(a.datum));
+    LOOKUP_ERGEBNISSE=treffer;
+    renderLookupErgebnisse(treffer);
+  }catch(e){
+    el.innerHTML=`<div class="empty">Fehler bei der Suche: ${e.message}</div>`;
+  }
+}
+
+function renderLookupErgebnisse(treffer){
+  const el=document.getElementById("lookup-ergebnisse");
+  if(treffer.length===0){el.innerHTML='<div class="empty">Keine Fahrten gefunden.</div>';return;}
+  el.innerHTML=`<div style="font-size:12px;color:var(--text3);margin-bottom:0.75rem">${treffer.length} Fahrt${treffer.length!==1?"en":""} gefunden</div>`+
+    treffer.map((r,i)=>{
+      const quizStr=r.quizTotal&&r.quizTotal!=="–"?`${r.quizRichtig}/${r.quizTotal} (${r.pct})`:"–";
+      return `<div class="entry-card">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px;">${esc(r.datum)} · ${esc(r.fahrzeug)}</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;">
+          Fahrer: ${esc(vollerNameAdmin(r.fahrer))}<br>
+          Beifahrer: ${esc(vollerNameAdmin(r.beifahrer))}<br>
+          Fahrzeit: ${esc(r.abfahrt)} – ${esc(r.rueckkehr)}<br>
+          Fragen: ${quizStr}
+        </div>
+        <div class="entry-actions" style="justify-content:flex-start;margin-top:0.75rem;">
+          <button class="btn btn-green" onclick="reprintPDF(${i})">PDF drucken</button>
+        </div>
+        <div class="status-msg" id="lookup-status-${i}"></div>
+      </div>`;
+    }).join("");
+}
+
+function vollerNameAdmin(kuerzel){
+  const k=String(kuerzel||"").toUpperCase().trim();
+  return (MITGLIEDER[k]&&MITGLIEDER[k].vollerName)||kuerzel;
+}
+
+async function reprintPDF(idx){
+  const r=LOOKUP_ERGEBNISSE[idx];
+  if(!r) return;
+  const statusEl=document.getElementById(`lookup-status-${idx}`);
+  statusEl.className="status-msg";statusEl.style.display="block";statusEl.textContent="PDF wird erstellt…";
+  try{
+    let fragenDetail=[];
+    let taetigkeitenDetail=[];
+    try{
+      const fragenRows=await gvizFetch(AUSWERTUNG_SHEET_ID,"Fragen");
+      fragenDetail=fragenRows.slice(1).map(row=>({
+        datum:gvizVal(row,0),fahrer:gvizVal(row,1),fahrzeug:gvizVal(row,2),
+        frage:gvizVal(row,3),gegeben:gvizVal(row,4),korrekt:gvizVal(row,5),richtig:gvizVal(row,6)
+      })).filter(q=>q.datum===r.datum&&q.fahrer===r.fahrer&&q.fahrzeug===r.fahrzeug);
+    }catch(e){}
+    try{
+      const taetRows=await gvizFetch(AUSWERTUNG_SHEET_ID,"Tätigkeiten");
+      taetigkeitenDetail=taetRows.slice(1).map(row=>({
+        datum:gvizVal(row,0),fahrer:gvizVal(row,1),fahrzeug:gvizVal(row,2),
+        taetigkeit:gvizVal(row,3),stufe:gvizVal(row,4),hilfe:gvizVal(row,5)
+      })).filter(t=>t.datum===r.datum&&t.fahrer===r.fahrer&&t.fahrzeug===r.fahrzeug);
+    }catch(e){}
+    generierePDFAdmin(r,fragenDetail,taetigkeitenDetail);
+    statusEl.style.display="none";
+  }catch(e){
+    statusEl.className="status-msg status-err";statusEl.textContent="Fehler: "+e.message;
+  }
+}
+
+function generierePDFAdmin(r,fragenDetail,taetigkeitenDetail){
+  if(!window.jspdf){alert("PDF-Bibliothek konnte nicht geladen werden.");return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const stufeLabel={"1":"Sehr gut","2":"Bitte weiter üben","3":"Nehmen wir auf"};
+
+  let y=20;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(14);
+  doc.text("Stützpunktfeuerwehr Meilen",20,y);
+  y+=7;
+  doc.setFontSize(11);
+  doc.text("Fahrtraining – Bestätigung (Kopie)",20,y);
+  y+=4;
+  doc.setDrawColor(204,0,0);
+  doc.setLineWidth(0.8);
+  doc.line(20,y,190,y);
+  y+=8;
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  const zeile=(label,wert)=>{
+    doc.setFont("helvetica","bold");doc.text(label,20,y);
+    doc.setFont("helvetica","normal");doc.text(String(wert),65,y);
+    y+=6;
+  };
+  zeile("Datum:",r.datum);
+  zeile("Fahrzeug:",r.fahrzeug+(r.gebiet?" · "+r.gebiet:""));
+  zeile("Fahrer:",vollerNameAdmin(r.fahrer));
+  zeile("Beifahrer:",vollerNameAdmin(r.beifahrer));
+  zeile("Fahrzeit:",`${r.abfahrt} – ${r.rueckkehr}`);
+
+  y+=4;
+  doc.setDrawColor(224,224,224);
+  doc.setLineWidth(0.3);
+  doc.line(20,y,190,y);
+  y+=8;
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(11);
+  doc.text("Resultate",20,y);
+  y+=7;
+  doc.setFontSize(10);
+
+  if(r.quizTotal&&r.quizTotal!=="–") zeile("Fragen richtig:",`${r.quizRichtig} von ${r.quizTotal} (${r.pct})`);
+  if(r.anzahlEinsaetze&&r.anzahlEinsaetze!=="0") zeile("Einsätze gefahren:",r.anzahlEinsaetze);
+
+  if(fragenDetail.length>0){
+    doc.setFont("helvetica","bold");doc.text("Fragen im Detail:",20,y);y+=6;
+    doc.setFont("helvetica","normal");
+    fragenDetail.forEach((q,i)=>{
+      const ok=q.richtig==="JA"?"✓":"✗";
+      const lines=doc.splitTextToSize(`${ok} ${i+1}. ${q.frage}`,165);
+      doc.text(lines,25,y);
+      y+=lines.length*5;
+    });
+    y+=2;
+  }
+
+  if(taetigkeitenDetail.length>0){
+    doc.setFont("helvetica","bold");doc.text("Tätigkeiten:",20,y);y+=6;
+    doc.setFont("helvetica","normal");
+    taetigkeitenDetail.forEach((t,i)=>{
+      const lines=doc.splitTextToSize(`${i+1}. ${t.taetigkeit} – ${stufeLabel[t.stufe]||t.stufe}`,165);
+      doc.text(lines,25,y);
+      y+=lines.length*5;
+    });
+  }
+
+  if(r.hilfe&&r.hilfe.trim()){
+    y+=4;
+    doc.setFont("helvetica","bold");doc.text("Hilfe/Bemerkungen:",20,y);y+=6;
+    doc.setFont("helvetica","normal");
+    const lines=doc.splitTextToSize(r.hilfe,165);
+    doc.text(lines,25,y);
+    y+=lines.length*5;
+  }
+
+  y+=8;
+  doc.setDrawColor(224,224,224);
+  doc.line(20,y,190,y);
+  y+=6;
+  doc.setFontSize(8);
+  doc.setTextColor(120,120,120);
+  doc.text(`Neu ausgestellt: ${new Date().toLocaleString("de-CH")} · CLv1.05`,20,y);
+
+  const dateiname=`Fahrtraining_${r.datum}_${r.fahrer}_Kopie.pdf`;
+  doc.save(dateiname);
 }
 
 /* ── Helpers ── */

@@ -495,7 +495,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.04</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.05</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -1325,7 +1325,9 @@ async function abschliessenSpeichern(rk){
                alleAdressen:ST.einsatzAddrListe?(ST.einsatzAddrListe.join("\n")||"–"):"–",
                hilfe:hilfeText||""},
         fragen:ST.quizResults.map(q=>({datum:ST.datum,fahrer:ST.fahrer,fahrzeug:ST.fahrzeug,
-               frage:q.frage,gegeben:q.gegeben,korrekt:q.korrekt,richtig:q.richtig?"JA":"NEIN"}))
+               frage:q.frage,gegeben:q.gegeben,korrekt:q.korrekt,richtig:q.richtig?"JA":"NEIN"})),
+        taetigkeiten:(ST.taetigkeitResults||[]).map(t=>({datum:ST.datum,fahrer:ST.fahrer,fahrzeug:ST.fahrzeug,
+               taetigkeit:t.frage,stufe:t.stufe,hilfe:t.hilfe||""}))
       })
     });
     const stufeLabel=["","✓ Ohne weiteres","⚠ Nachgeschaut","✗ Nicht gelöst"];
@@ -1416,7 +1418,7 @@ function generierePDF(){
   y+=6;
   doc.setFontSize(8);
   doc.setTextColor(120,120,120);
-  doc.text(`Erstellt: ${new Date().toLocaleString("de-CH")} · CLv1.04`,20,y);
+  doc.text(`Erstellt: ${new Date().toLocaleString("de-CH")} · CLv1.05`,20,y);
 
   const dateiname=`Fahrtraining_${ST.datum}_${ST.fahrer}.pdf`;
   doc.save(dateiname);
