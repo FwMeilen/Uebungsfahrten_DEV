@@ -156,7 +156,7 @@ select.filter{height:32px;padding:0 8px;border:1px solid var(--gray-mid);backgro
   </div>
 </div>
 
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.02</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.03</div>
 
 <script>
 const SHEET_ID = "1Y_kp8pqKNimB00UDSqWyWIfwXKZ7wRmBcJkWqBLvC3w";
@@ -164,6 +164,31 @@ const BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out
 
 let DATA = {fahrten:[], fragen:[]};
 let charts = {};
+const MITGLIEDER_SHEET_ID="1bK6IuVpAdLyYc9_NPbJxFMkvCZ0fNvadJABBUM-Rc0M";
+let MITGLIEDER={};
+
+async function ladeMitglieder(){
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${MITGLIEDER_SHEET_ID}/gviz/tq?tqx=out:json`;
+    const res=await fetch(url);
+    const text=await res.text();
+    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows=(json.table.rows||[]).slice(1);
+    const result={};
+    rows.forEach(row=>{
+      const c=row.c||[];
+      const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
+      const kuerzel=val(0).toUpperCase();
+      if(kuerzel) result[kuerzel]=`${val(1)} ${val(2)}`.trim();
+    });
+    MITGLIEDER=result;
+  }catch(e){console.warn("Mitglieder konnten nicht geladen werden:",e);}
+}
+
+function vollerName(kuerzel){
+  const k=String(kuerzel||"").toUpperCase().trim();
+  return MITGLIEDER[k]||kuerzel;
+}
 
 async function fetchSheet(sheet) {
   const url = `${BASE}&sheet=${encodeURIComponent(sheet)}`;
@@ -185,7 +210,8 @@ async function loadData() {
   try {
     const [fahrten, fragen] = await Promise.all([
       fetchSheet("Fahrten"),
-      fetchSheet("Fragen")
+      fetchSheet("Fragen"),
+      ladeMitglieder()
     ]);
     DATA.fahrten = fahrten;
     DATA.fragen = fragen;
@@ -378,7 +404,7 @@ function renderFahrer() {
     const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
     return `<div class="frage-row">
       <div class="frage-pct" style="color:var(--black);font-size:13px;min-width:28px">${i+1}.</div>
-      <div style="font-size:13px;font-weight:600;min-width:50px">${medal} ${name}</div>
+      <div style="font-size:13px;font-weight:600;min-width:50px">${medal} ${vollerName(name)}</div>
       <div class="frage-bar-bg"><div class="frage-bar" style="width:${pct}%;background:var(--black)"></div></div>
       <div style="font-size:12px;color:var(--text3);white-space:nowrap;flex-shrink:0">${count} Fahrt${count!==1?"en":""}</div>
     </div>`;

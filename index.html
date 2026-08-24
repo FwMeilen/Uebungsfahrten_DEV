@@ -6,6 +6,7 @@
 <title>Fahrtraining – Stützpunktfeuerwehr Meilen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -479,6 +480,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <p class="sub" style="margin-bottom:0.5rem">Vielen Dank! Die Zusammenfassung wurde gespeichert.</p>
       <div id="fd-summary-box" style="background:var(--bg2);border-left:4px solid var(--green);padding:1rem;margin:1rem 0;text-align:left;font-size:13px;line-height:1.8;"></div>
       <div class="btn-row" style="justify-content:center;margin-top:1rem">
+        <button class="btn btn-primary" onclick="generierePDF()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+          PDF-Bestätigung herunterladen
+        </button>
+      </div>
+      <div class="btn-row" style="justify-content:center;margin-top:0.5rem">
         <button class="btn btn-primary" onclick="neustart()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
           Neues Fahrtraining
@@ -488,7 +495,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.02</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.03</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -535,6 +542,39 @@ async function ladeEinsaetze(){
     }).filter(e=>e.meldung);
     try{localStorage.setItem(EINSAETZE_CACHE_KEY,JSON.stringify({ts:Date.now(),data:EINSAETZE}));}catch(e){}
   }catch(e){console.warn("Einsatzmeldungen konnten nicht geladen werden:",e);}
+}
+
+const MITGLIEDER_SHEET_ID="1bK6IuVpAdLyYc9_NPbJxFMkvCZ0fNvadJABBUM-Rc0M";
+const MITGLIEDER_CACHE_KEY="fw_mitglieder";
+const MITGLIEDER_TTL=24*60*60*1000; // 1 Tag
+let MITGLIEDER={};
+
+async function ladeMitglieder(){
+  try{
+    const cached=localStorage.getItem(MITGLIEDER_CACHE_KEY);
+    if(cached){const obj=JSON.parse(cached);if(Date.now()-obj.ts<MITGLIEDER_TTL){MITGLIEDER=obj.data;return;}}
+  }catch(e){}
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${MITGLIEDER_SHEET_ID}/gviz/tq?tqx=out:json`;
+    const res=await fetch(url);
+    const text=await res.text();
+    const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows=(json.table.rows||[]).slice(1);
+    const result={};
+    rows.forEach(row=>{
+      const c=row.c||[];
+      const val=i=>c[i]&&c[i].v!=null?String(c[i].v).trim():"";
+      const kuerzel=val(0).toUpperCase();
+      if(kuerzel) result[kuerzel]=`${val(1)} ${val(2)}`.trim();
+    });
+    MITGLIEDER=result;
+    try{localStorage.setItem(MITGLIEDER_CACHE_KEY,JSON.stringify({ts:Date.now(),data:result}));}catch(e){}
+  }catch(e){console.warn("Mitglieder konnten nicht geladen werden:",e);}
+}
+
+function vollerName(kuerzel){
+  const k=String(kuerzel||"").toUpperCase().trim();
+  return MITGLIEDER[k]||kuerzel;
 }
 
 let ADRESSEN={};
@@ -665,7 +705,8 @@ async function init(){
     await Promise.all([
       ladeAdressen().catch(e=>{console.warn("Adressen:",e);fehler.push("Adressen (Einsatzziele)");}),
       ladeFragen().catch(e=>{console.warn("Fragen:",e);fehler.push("Abfrage-Fragen");}),
-      ladeEinsaetze().catch(e=>{console.warn("Einsaetze:",e);fehler.push("Einsatzmeldungen");})
+      ladeEinsaetze().catch(e=>{console.warn("Einsaetze:",e);fehler.push("Einsatzmeldungen");}),
+      ladeMitglieder().catch(e=>console.warn("Mitglieder:",e))
     ]);
     // Prüfe ob Daten wirklich vorhanden
     const addrCount=Object.values(ADRESSEN).reduce((s,a)=>s+a.length,0);
@@ -1267,11 +1308,85 @@ async function abschliessenSpeichern(rk){
       });
     }
     document.getElementById("fd-summary-box").innerHTML=summaryHtml;
+    ST.rueckkehr=rk;
     show("s-fertig");
   }catch(e){
     statusEl.className="save-status save-err";
     statusEl.textContent="Fehler beim Speichern. Bitte Internetverbindung prüfen.";
   }
+}
+
+function generierePDF(){
+  if(!window.jspdf){alert("PDF-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.");return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const richtig=ST.quizResults.filter(x=>x.richtig).length;
+  const total=ST.quizResults.length;
+  const pct=total>0?Math.round(richtig/total*100):0;
+  const gl=ST.gebiet==="stuetzpunkt"?"Stützpunktgebiet":"Ortsfeuerwehrgebiet";
+  const taetList=ST.taetigkeitResults||[];
+  const stufeLabel={1:"Sehr gut",2:"Bitte weiter üben",3:"Nehmen wir auf"};
+
+  let y=20;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(14);
+  doc.text("Stützpunktfeuerwehr Meilen",20,y);
+  y+=7;
+  doc.setFontSize(11);
+  doc.text("Fahrtraining – Bestätigung",20,y);
+  y+=4;
+  doc.setDrawColor(204,0,0);
+  doc.setLineWidth(0.8);
+  doc.line(20,y,190,y);
+  y+=8;
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  const zeile=(label,wert)=>{
+    doc.setFont("helvetica","bold");doc.text(label,20,y);
+    doc.setFont("helvetica","normal");doc.text(String(wert),65,y);
+    y+=6;
+  };
+  zeile("Datum:",ST.datum);
+  zeile("Fahrzeug:",ST.fahrzeug+" · "+gl);
+  zeile("Fahrer:",vollerName(ST.fahrer));
+  zeile("Beifahrer:",vollerName(ST.beifahrer));
+  zeile("Fahrzeit:",`${ST.abfahrt} – ${ST.rueckkehr}`);
+
+  y+=4;
+  doc.setDrawColor(224,224,224);
+  doc.setLineWidth(0.3);
+  doc.line(20,y,190,y);
+  y+=8;
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(11);
+  doc.text("Resultate",20,y);
+  y+=7;
+  doc.setFontSize(10);
+
+  if(total>0) zeile("Fragen richtig:",`${richtig} von ${total} (${pct}%)`);
+  if(ST.einsatzCount>0) zeile("Einsätze gefahren:",ST.einsatzCount);
+  if(taetList.length>0){
+    doc.setFont("helvetica","bold");doc.text("Tätigkeiten:",20,y);y+=6;
+    doc.setFont("helvetica","normal");
+    taetList.forEach((t,i)=>{
+      const lines=doc.splitTextToSize(`${i+1}. ${t.frage} – ${stufeLabel[t.stufe]||""}`,165);
+      doc.text(lines,25,y);
+      y+=lines.length*5;
+    });
+  }
+
+  y+=8;
+  doc.setDrawColor(224,224,224);
+  doc.line(20,y,190,y);
+  y+=6;
+  doc.setFontSize(8);
+  doc.setTextColor(120,120,120);
+  doc.text(`Erstellt: ${new Date().toLocaleString("de-CH")} · CLv1.03`,20,y);
+
+  const dateiname=`Fahrtraining_${ST.datum}_${ST.fahrer}.pdf`;
+  doc.save(dateiname);
 }
 
 function neustart(){
