@@ -495,7 +495,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
 </div>
-<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.03</div>
+<div class="site-footer">© Stützpunktfeuerwehr Meilen / LOL &nbsp;·&nbsp; CLv1.04</div>
 
 <script>
 const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvTL3yecdyTvSV5ZPgGslm5K-3UFjW9zc4A2qn_zUk50CcSIpXEaBE1hMiaU3GnNEQ/exec";
@@ -753,6 +753,8 @@ function selectGebiet(val){
   document.getElementById("rc-orts").classList.toggle("selected",val==="orts");
 }
 
+let PENDING_WEITER=null;
+
 function weiter(){
   const fa=document.getElementById("f-fahrer").value.trim().toUpperCase();
   const bf=document.getElementById("f-beifahrer").value.trim().toUpperCase();
@@ -765,6 +767,37 @@ function weiter(){
   const err=document.getElementById("form1-err");
   if(!fa||!bf||!dat||!abf||!fzg||!fahrt||!aufbau||!selectedKat||(needsGebiet&&!selectedGebiet)){err.style.display="block";return;}
   err.style.display="none";
+
+  // Kürzel-Check gegen Mitgliederliste (nur wenn Liste geladen ist)
+  if(Object.keys(MITGLIEDER).length>0){
+    const unbekannt=[];
+    if(!MITGLIEDER[fa]) unbekannt.push(`Fahrer „${fa}"`);
+    if(!MITGLIEDER[bf]) unbekannt.push(`Beifahrer „${bf}"`);
+    if(unbekannt.length>0){
+      document.getElementById("kuerzel-warn-text").textContent=`${unbekannt.join(" und ")} nicht in der Mitgliederliste gefunden. Trotzdem starten?`;
+      document.getElementById("kuerzel-warn-bg").style.display="flex";
+      PENDING_WEITER={fa,bf,dat,abf,fzg,fahrt,aufbau,needsGebiet};
+      return;
+    }
+  }
+  weiterFortsetzen(fa,bf,dat,abf,fzg,fahrt,aufbau,needsGebiet);
+}
+
+function kuerzelWarnAbbrechen(){
+  document.getElementById("kuerzel-warn-bg").style.display="none";
+  PENDING_WEITER=null;
+}
+
+function kuerzelWarnOk(){
+  document.getElementById("kuerzel-warn-bg").style.display="none";
+  if(PENDING_WEITER){
+    const p=PENDING_WEITER;
+    weiterFortsetzen(p.fa,p.bf,p.dat,p.abf,p.fzg,p.fahrt,p.aufbau,p.needsGebiet);
+    PENDING_WEITER=null;
+  }
+}
+
+function weiterFortsetzen(fa,bf,dat,abf,fzg,fahrt,aufbau,needsGebiet){
   ST={fahrer:fa,beifahrer:bf,datum:dat,abfahrt:abf,fahrzeug:fzg,fahrt,aufbau,
       gebiet:needsGebiet?selectedGebiet:"orts",einsatzAddr:null,einsatzAddrListe:[],quizResults:[],taetigkeitResults:[],einsatzCount:0,einsatzZeit:null,einsatzAddrObj:null,vonAbfrage:false,fahrzeitBestaetigt:false};
   if(fahrt==="frei"){
@@ -1383,7 +1416,7 @@ function generierePDF(){
   y+=6;
   doc.setFontSize(8);
   doc.setTextColor(120,120,120);
-  doc.text(`Erstellt: ${new Date().toLocaleString("de-CH")} · CLv1.03`,20,y);
+  doc.text(`Erstellt: ${new Date().toLocaleString("de-CH")} · CLv1.04`,20,y);
 
   const dateiname=`Fahrtraining_${ST.datum}_${ST.fahrer}.pdf`;
   doc.save(dateiname);
@@ -1466,6 +1499,17 @@ document.addEventListener("DOMContentLoaded",()=>{
     <div style="display:flex;gap:8px;margin-top:1rem;">
       <button class="btn" style="flex:1;justify-content:center;" onclick="fahrzeitAnpassen()">Zeit anpassen</button>
       <button class="btn btn-green" style="flex:1;justify-content:center;" onclick="fahrzeitBestaetigen()">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<div class="info-modal-bg" id="kuerzel-warn-bg">
+  <div class="info-modal">
+    <h3>Kürzel nicht gefunden</h3>
+    <p id="kuerzel-warn-text"></p>
+    <div style="display:flex;gap:8px;margin-top:1rem;">
+      <button class="btn" style="flex:1;justify-content:center;" onclick="kuerzelWarnAbbrechen()">Zurück</button>
+      <button class="btn btn-green" style="flex:1;justify-content:center;" onclick="kuerzelWarnOk()">OK, trotzdem starten</button>
     </div>
   </div>
 </div>
